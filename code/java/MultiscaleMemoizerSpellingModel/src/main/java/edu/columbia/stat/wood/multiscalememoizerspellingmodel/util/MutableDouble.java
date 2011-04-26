@@ -32,7 +32,4 @@ public class MutableDouble {
     public void timesEquals(double factor) {
         value *= factor;
     }
-
-
-
 }
