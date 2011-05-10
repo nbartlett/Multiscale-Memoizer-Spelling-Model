@@ -14,13 +14,21 @@ import java.util.Random;
 public class UniformIntegerDistribution implements Distribution<Integer> {
 
     private int alphabetSize;
+    private int leftShift;
+
+    public UniformIntegerDistribution(int alphabetSize, int leftShift) {
+        this.alphabetSize = alphabetSize;
+        this.leftShift = leftShift;
+    }
 
     public UniformIntegerDistribution(int alphabetSize) {
         this.alphabetSize = alphabetSize;
+        this.leftShift = 0;
     }
 
     @Override
     public double logProbability(Integer type) {
+        type = type + leftShift;
         if (type < alphabetSize && type >= 0) {
             return Math.log(1d / (double) alphabetSize);
         } else {
@@ -30,7 +38,7 @@ public class UniformIntegerDistribution implements Distribution<Integer> {
 
     @Override
     public Integer generate() {
-        return (int) (Util.rng.nextDouble() * alphabetSize);
+        return (int) (Util.rng.nextDouble() * alphabetSize) - leftShift;
     }
 
     @Override

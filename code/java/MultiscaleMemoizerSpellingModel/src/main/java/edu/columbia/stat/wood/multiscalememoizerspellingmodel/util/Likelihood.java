@@ -10,6 +10,9 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
  * @author nicholasbartlett
  */
 public interface Likelihood {
-    double probability(int observation, int parameter);
-    int generate(int parameter);
+
+    double logProb(int[] reference, int[] read);
+
+    void clear();
+
 }

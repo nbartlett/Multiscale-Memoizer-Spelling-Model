@@ -5,23 +5,20 @@
 
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
-import java.util.Random;
-
-
 /**
  *
  * @author nicholasbartlett
  */
 public interface Distribution<E> {
+    
     double logProbability(E type);
 
     E generate();
 
-    void incrementObservationCount(E type);
+    void incrementObservationCount(E observation);
 
-    void decrementObservationCount(E type);
+    void decrementObservationCount(E observation);
 
     double score();
-
     void sample();
 }

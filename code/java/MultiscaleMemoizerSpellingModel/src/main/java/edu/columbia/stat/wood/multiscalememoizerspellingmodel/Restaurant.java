@@ -2,149 +2,411 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Pair;
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.HashSet;
-import java.util.LinkedList;
 
 /**
  *
  * @author nicholasbartlett
  */
 
-public class Restaurant extends HashMap<Integer, Restaurant> {
+public class Restaurant extends HashMap<Word, Restaurant> {
 
     public Restaurant parent;
-    public int[] edgeLabel;
-    public byte depth;
+    public HashSet<Table> tables;
+    public MutableDouble discount;
+    public MutableDouble concentration;
+    public int customers;
 
-    public HashMap<MutableInt, HashSet<Table>> tables;
-    public Discounts discounts;
-
-    /*
-    public double logProbability(MutableInt type) {
-        double p = 0d;
-        double d = discount();
-        
-        HashSet<Table> tableSet = tables.get(type);
-        if (tableSet != null) {
-            for (Table table : tableSet) {
-                p += ((double) table.size() - d) / (double) customerCount;
-            }
-        }
-
-        p += d * (double) tableCount * Math.exp(parent.logProbability(type)) / (double) customerCount;
-
-        return Math.log(p);
+    public Restaurant(Restaurant parent, MutableDouble concentration, MutableDouble discount) {
+        this.parent = parent;
+        this.concentration = concentration;
+        this.discount = discount;
+        tables = new HashSet<Table>();
+        customers = 0;
     }
 
-    
-    public MutableInt generate() {
-        double d = discount();
-        double cuSum = 0d;
-        double r = Util.rng.nextDouble();
-
-        for (Entry<MutableInt, HashSet<Table>> entry : tables.entrySet()) {
-            MutableInt mutableInt = entry.getKey();
-            HashSet<Table> tableSet = entry.getValue();
-            for (Table table : tableSet) {
-                cuSum += ((double) table.size() - d) / (double) customerCount;
-                if (cuSum > r) {
-                    return mutableInt;
-                }
+    public Restaurant get(int index, Word[] context, MutableDouble[] concentrations, MutableDouble[] discounts) {
+        if (index > -1 && context[index] != null) {
+            Restaurant child = get(context[index]);
+            if (child == null) {
+                int i = index < discounts.length ? index : (discounts.length - 1);
+                child = new Restaurant(this, concentrations[i], discounts[i]);
+                put(context[index], child);
             }
-        }
-        
-        return parent.generate();
-    }*/
-
-    /*
-    public Table seat(Table table, Likelihood likelihood, LinkedList<double[]> list, MutableDouble r, MutableDouble cuSum) {
-        // on the way up the recursion calculate log probabilities of all the dishes in this restaurant
-        double[] weights = new double[tables.size()];
-        int[] parameters = new int[tables.size()];
-
-        HashSet[] tableSets = new HashSet[tables.size()];
-        double d = discount();
-        
-        int tableCount = 0;
-        int i = 0;
-        for (Entry<MutableInt,HashSet<Table>> entry : tables.entrySet()) {
-            HashSet<Table> tableSet = entry.getValue();
-            tableSets[i] = tableSet;
-
-            tableCount += tableSet.size();
-            parameters[i] = entry.getKey().intValue();
-            weights[i++] = Math.log(dishCustomerCount(tableSet) - d * (double) tableSet.size());
-        }
-
-        table.logProbabilitySubtree(weights, parameters, likelihood);
-        list.push(weights);
-
-        // now, if a table is passed down from an above restaurant it means that this table needs
-        // to be seated at a new table which is in turn seated at the above table.  I will
-        // assume that weights get normalize in the root (base of the recursion)
-
-        Table parentTable = parent.seat(table, likelihood, list, r, cuSum);
-        if (parentTable == null) {
-            weights = list.pop();
-            for (int j = 0; j < weights.length; j++) {
-                cuSum.plusEquals(weights[j]);
-                if (cuSum.doubleValue() > r.doubleValue()) {
-                    // select from the appropriate hash setl
-                }
-            }
+            return child.get(index - 1, context, concentrations, discounts);
         } else {
-            // insert new table with dish parentTable.dish and seat this this table 
+            return this;
+        }
+    }
+
+    public void seatWithParameter(Table childTable) {
+        customers++;
+        if (tables == null || tables.isEmpty()) {
+            if (tables == null) {
+                tables = new HashSet<Table>();
+            }
+
+            Table newTable = new Table();
+            newTable.parameter = childTable.parameter;
+            newTable.tables.add(childTable);
+            childTable.parent = newTable;
+            tables.add(newTable);
+            parent.seatWithParameter(newTable);
+        } else {
+            ArrayList<Table> candidateList = new ArrayList<Table>();
+            double tw = 0d;
+            double d = discount.doubleValue();
+            double c = concentration.doubleValue();
+
+            for (Table t : tables) {
+                if (t.parameter.equals(childTable.parameter)) {
+                    candidateList.add(t);
+                    tw += (double) t.size() - d;
+                }
+            }
+            tw += d * (double) tables.size() + c;
+
+            double cuSum = 0d;
+            double r = Util.rng.nextDouble();
+
+            for (Table t : candidateList) {
+                cuSum += ((double) t.size() - d) / tw;
+                if (cuSum > r) {
+                    t.tables.add(childTable);
+                    childTable.parent = t;
+                    return;
+                }
+            }
+
+            assert r >= cuSum;
+
+            Table newTable = new Table();
+            newTable.parameter = childTable.parameter;
+            newTable.tables.add(childTable);
+            childTable.parent = newTable;
+            tables.add(newTable);
+            parent.seatWithParameter(newTable);
+        }
+    }
+
+    public void initSeatDatum(Datum datum) {
+        customers++;
+        if (tables == null || tables.isEmpty()) {
+            if (tables == null) {
+                tables = new HashSet<Table>();
+            }
+
+            Table newTable = new Table();
+            newTable.parameter = datum.word;
+            newTable.seat(datum);
+            tables.add(newTable);
+            parent.seatWithParameter(newTable);
+        } else {
+            ArrayList<Table> candidateList = new ArrayList<Table>();
+            double tw = 0d;
+            double d = discount.doubleValue();
+            double c = concentration.doubleValue();
+
+            for (Table t : tables) {
+                if (t.parameter.equals(datum.word)) {
+                    candidateList.add(t);
+                    tw += (double) t.size() - d;
+                }
+            }
+            tw += d * (double) tables.size() + c;
+
+            double cuSum = 0d;
+            double r = Util.rng.nextDouble();
+
+            for (Table t : candidateList) {
+                cuSum += ((double) t.size() - d) / tw;
+                if (cuSum > r) {
+                    t.seat(datum);
+                    return;
+                }
+            }
+            
+            assert r >= cuSum;
+
+            Table newTable = new Table();
+            newTable.parameter = datum.word;
+            newTable.seat(datum);
+            tables.add(newTable);
+            parent.seatWithParameter(newTable);
+        }
+    }
+
+    public void seat(Customer customer, Likelihood like) {
+
+        ArrayList<Pair<Table, Double>> logWeightsTables = new ArrayList<Pair<Table, Double>>();
+        MutableDouble log_tw = new MutableDouble(Double.NEGATIVE_INFINITY);
+        double d = discount.doubleValue();
+        double c = concentration.doubleValue();
+        int tbls = 0;
+        Table emptyTable = null;
+
+        int m = 10;
+
+        double log_w;
+        double log_denom = Math.log((double) customers + c);
+        for (Table table : tables) {
+            if (table.size() > 0) {
+                log_w = Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like); // memoizable?
+                log_tw.addLogs(log_w);
+                logWeightsTables.add(new Pair(table, log_w));
+                tbls++;
+            } else {
+                emptyTable = table;
+            }
         }
 
+        if (emptyTable != null) {
+            tables.remove(emptyTable);
+        }
 
+        ArrayList<Pair<Word, Double>> logWeightsParams = new ArrayList<Pair<Word, Double>>();
+        double logProbPrior = Math.log(d * (double) tbls + c) - log_denom;
+        parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, logProbPrior, m, emptyTable != null);
 
+        if (emptyTable != null) {
+            log_w = logProbPrior + customer.logLikelihood(emptyTable.parameter, like);
+            log_tw.addLogs(log_w);
+            logWeightsParams.add(new Pair(emptyTable.parameter, log_w));
+        }
 
+        assert log_tw.doubleValue() > Double.NEGATIVE_INFINITY;
 
-        // get the probability of table being assigned to upper level type table etc
+        double log_r = Math.log(Util.rng.nextDouble());
+        double cuSum = Double.NEGATIVE_INFINITY;
 
-        
+        double log_total_weight = log_tw.doubleValue();
+        for (Pair<Table, Double> pair : logWeightsTables) {
+            cuSum = addLogs(cuSum, pair.second() - log_total_weight);
+            if (cuSum > log_r) {
+                pair.first().seat(customer);
+                customers++;
+                return;
+            }
+        }
 
+        for (Pair<Word, Double> pair : logWeightsParams) {
+            cuSum = addLogs(cuSum, pair.second() - log_total_weight);
+            if (cuSum > log_r) {
+                Table table = new Table();
+                table.parameter = pair.first();
+                tables.add(table);
+                table.seat(customer);
+                parent.seatWithParameter(table);
+                customers++;
+                return;
+            }
+        }
 
-        
-
-
-
+        System.out.println("cuSum = " + cuSum);
+        System.out.println("log_tw = " + log_tw);
+        System.out.println("log _r = " + log_r);
+        throw new RuntimeException("Should never get down to here");
     }
-    */
 
-    private double dishCustomerCount(HashSet<Table> tableSet) {
+    public void parentParamsAndWeights(Customer customer, Likelihood like, ArrayList<Pair<Word,Double>> logWeightsParams, MutableDouble log_tw, double log_scalar, int m, boolean emptyTable){
+        double d = discount.doubleValue();
+        double c = concentration.doubleValue();
+        
+        double log_w;
+        double log_denom = Math.log((double) customers + c);
+        for (Table table : tables) {
+            log_w = log_scalar + Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like);
+            logWeightsParams.add(new Pair(table.parameter, log_w));
+            log_tw.addLogs(log_w);
+        }
+
+        parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, log_scalar + Math.log(d * (double) tables.size() + c) - log_denom, m, emptyTable);
+    }
+
+    public void unseat(Table childTable, Table table) {
+        table.tables.remove(childTable);
+        customers--;
+        if (table.size() == 0) {
+            tables.remove(table);
+            parent.unseat(table, table.parent);
+        }
+    }
+
+    public ArrayList<Word> generateParameters(int n) {
+        ArrayList<Word> sample = new ArrayList<Word>(n);
+        generateParameters(sample, Util.rng.nextDouble() / (double) n, n);
+        return sample;
+    }
+
+    public void generateParameters(ArrayList<Word> sample, double r, int n) {
+        double cuSum = 0d;
+        double d = discount.doubleValue();
+        double c = concentration.doubleValue();
+        double constant = 1d / (double) n;
+
+        for (Table table : tables) {
+            cuSum += ((double) table.size() - d) / ((double) customers + c);
+
+            assert cuSum < 1d;
+
+            while (cuSum > r) {
+                sample.add(table.parameter);
+                n--;
+                r += constant;
+            }
+        }
+
+        if (n > 0) {
+            double probThis = ((double) customers - d * (double) tables.size()) / ((double) customers + c);
+            double probParent = (d * (double) tables.size() + c) / ((double) customers + c);
+            parent.generateParameters(sample, (r - probThis) / probParent, n);
+        }
+    }
+
+    public void sample(Likelihood like) {
+        HashSet<Table> copyTables = (HashSet<Table>) tables.clone();
+        
+        for (Table table : copyTables) {
+            HashSet<Table> copyTableTables = (HashSet<Table>) table.tables.clone();
+            for (Table childTable : copyTableTables) {
+                table.tables.remove(childTable);
+                customers--;
+                if (table.size() == 0) {
+                    parent.unseat(table, table.parent);
+                }
+                seat(childTable, like);
+            }
+
+            HashMap<Datum, MutableInt> copyData = (HashMap<Datum, MutableInt>) table.data.clone();
+            for (Entry<Datum, MutableInt> entry : copyData.entrySet()) {
+                MutableInt count = entry.getValue();
+                if (count.intValue() == 1) {
+                    table.data.remove(entry.getKey());
+                } else {
+                    count.decrement();
+                }
+                customers--;
+                if (table.size() == 0) {
+                    parent.unseat(table, table.parent);
+                }
+
+                seat(entry.getKey(), like);
+            }
+        }
+    }
+
+    public void logProbability(MutableDouble logProbability, int[] read, Likelihood like, double log_scalar) {
+        double lw;
+        double d = discount.doubleValue();
+        double c = concentration.doubleValue();
+
+        double log_denom = Math.log((double) customers + c);
+        for (Table table : tables) {
+            lw = log_scalar + Math.log((double) table.size() - d) - log_denom + like.logProb(table.parameter.value, read);
+            logProbability.addLogs(lw);
+        }
+
+        assert logProbability.doubleValue() < 0d;
+
+        parent.logProbability(logProbability, read, like, Math.log(d * (double) tables.size() + c) - log_denom + log_scalar);
+    }
+
+    public double score(Likelihood like) {
+        double score = 0d;
+        double d = discount.doubleValue();
+        double c = concentration.doubleValue();
+
+        int tbls = 0;
+        int custs = 0;
+
+        for (Table table : tables) {
+            int cust = 0;
+            for (int t = 0; t < table.tables.size(); t++) {
+                if (tbls == 0 && cust == 0); else if (cust == 0) {
+                    score += Math.log(d * (double) tbls + c);
+                } else {
+                    score += Math.log((double) cust - d);
+                }
+                score -= Math.log((double) custs + c);
+                cust++;
+                custs++;
+            }
+
+            for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
+                if (tbls == 0 && cust == 0); else if (cust == 0) {
+                    score += Math.log(d * (double) tbls + c);
+                } else {
+                    score += Math.log((double) cust - d);
+                }
+                score -= Math.log((double) custs + c);
+
+                score += entry.getKey().logLikelihood(table.parameter, like) * (double) entry.getValue().intValue();
+                cust++;
+                custs++;
+            }
+            tbls++;
+        }
+        return score;
+    }
+
+    public boolean checkCustomerCounts() {
         int c = 0;
-        for (Table t : tableSet) {
+
+        for (Table t : tables) {
             c += t.size();
         }
-        return c;
+
+        assert c == customers : "c = " + c + ", customers = " + customers;
+        return c == customers;
     }
 
+    public int dataCount() {
+        int count = 0;
+        for (Table t : tables) {
+            for (MutableInt c : t.data.values()) {
+                count += c.intValue();
+            }
+        }
+
+        for (Restaurant c : values()){
+            count += c.dataCount();
+        }
+
+        return count;
+    }
+
+    @Override
+    public String toString() {
+        String str = "";
+        for (Table table : tables) {
+            str += table.toString() + "\n";
+        }
+        return str;
+    }
+
+    private double addLogs(double logA, double logB) {
+        if (Double.isInfinite(logA) && Double.isInfinite(logB)) {
+            if (logA < 0d && logB < 0d) {
+                return Double.NEGATIVE_INFINITY;
+            } else {
+                throw new RuntimeException("basically shouldn't happen");
+            }
+        } else if (logA > logB) {
+            return Math.log(1.0 + Math.exp(logB - logA)) + logA;
+        } else {
+            return Math.log(1.0 + Math.exp(logA - logB)) + logB;
+        }
+    }
     
-    public void decrementObservationCount(MutableInt type) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    
-    public void sample() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    private double discount() {
-        return discounts.get(depth, edgeLabel);
-    }
-
-    void unseat(MutableInt dish, Table aThis) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-
 }

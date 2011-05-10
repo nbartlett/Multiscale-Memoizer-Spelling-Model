@@ -6,20 +6,36 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
  *
  * @author nicholasbartlett
  */
-public class InDelLikelihood {
+public class InDelLikelihood implements Likelihood {
 
-    public int alphabetSize = 26;
-    public double lambda_i = 0.1;
-    public double lambda_d = 0.1;
-    public double lambda_s = 0.1;
+    private Key key = new Key();
+    private KeySum keySum = new KeySum();
 
-    public double phi_m(int ref, int read) {
+    private HashMap<Key,Double> logProbLookup = new HashMap<Key,Double>();
+    private HashMap<KeySum,Double> logSumLookup = new HashMap<KeySum,Double>();
+
+    private int alphabetSize = 26;
+
+    private double lambda_i = 0.001;
+    private double lambda_d = 0.001;
+    private double lambda_s = 0.001;
+
+    private int maxEdits;
+    private Random rng;
+
+    public InDelLikelihood(int maxEdits, Random rng) {
+        this.maxEdits = maxEdits;
+        this.rng = rng;
+    }
+
+    private double phi_m(int ref, int read) {
         if (ref < alphabetSize && ref == read) {
             return 1d;
         } else {
@@ -27,7 +43,7 @@ public class InDelLikelihood {
         }
     }
 
-    public double phi_i(int read) {
+    private double phi_i(int read) {
         if (read < alphabetSize) {
             return 1d / (double) alphabetSize;
         } else {
@@ -35,7 +51,7 @@ public class InDelLikelihood {
         }
     }
 
-    public double phi_d(int ref) {
+    private double phi_d(int ref) {
         if (ref < alphabetSize) {
             return 1d / (double) alphabetSize;
         } else {
@@ -43,7 +59,7 @@ public class InDelLikelihood {
         }
     }
 
-    public double phi_s(int ref, int read) {
+    private double phi_s(int ref, int read) {
         if (ref < alphabetSize && read < alphabetSize) {
             return 1d / (double) alphabetSize;
         } else {
@@ -56,13 +72,35 @@ public class InDelLikelihood {
     private byte[][] logSumContains;
     private double[][] logSums;
 
-    public double logProb(int[] reference, int[] read, int maxEdits) {
-        logProbContains = new byte[reference.length + 1][read.length + 1][maxEdits + 1];
-        logProbs = new double[reference.length + 1][read.length + 1][maxEdits + 1];
-        return logProb(reference, read, maxEdits, 0, 0, 0);
+    public double logProb(int[] reference, int[] read) {
+        key._1 = reference;
+        key._2 = read;
+        Double logProb = logProbLookup.get(key);
+
+        if (logProb == null) {
+
+            if (logProbLookup.size() > 1000000) {
+                logProbLookup.clear();
+            }
+
+            Key key = new Key();
+            key._1 = reference;
+            key._2 = read;
+
+            logProbContains = new byte[reference.length + 1][read.length + 1][maxEdits + 1];
+            logProbs = new double[reference.length + 1][read.length + 1][maxEdits + 1];
+            
+            logProbLookup.put(key, logProb = new Double(logProb(reference, read, maxEdits, 0, 0, 0) - logSumProb(reference, maxEdits)));
+        }
+
+        return logProb.doubleValue();
     }
 
-    public double logProb(int[] reference, int[] read, int maxEdits, int refIndex, int readIndex, int edits) {
+    public int lookupSize() {
+        return logProbLookup.size();
+    }
+
+    private double logProb(int[] reference, int[] read, int maxEdits, int refIndex, int readIndex, int edits) {
         if (logProbContains[refIndex][readIndex][edits] == 1) {
             return logProbs[refIndex][readIndex][edits];
         } else {
@@ -111,9 +149,26 @@ public class InDelLikelihood {
     }
 
     private double logSumProb(int[] reference, int maxEdits) {
-        logSumContains = new byte[reference.length + 1][maxEdits + 1];
-        logSums = new double[reference.length + 1][maxEdits + 1];
-        return logSumProb(reference, maxEdits, alphabetSize, 0, 0);
+        keySum.key = reference;
+        keySum.maxEdits = maxEdits;
+        Double logSum = logSumLookup.get(keySum);
+
+        if (logSum == null) {
+            if (logSumLookup.size() > 1000000) {
+                logSumLookup.clear();
+            }
+
+            KeySum keySum = new KeySum();
+            keySum.key = reference;
+            keySum.maxEdits = maxEdits;
+
+            logSumContains = new byte[reference.length + 1][maxEdits + 1];
+            logSums = new double[reference.length + 1][maxEdits + 1];
+
+            logSumLookup.put(keySum, logSum = logSumProb(reference, maxEdits, alphabetSize, 0, 0));
+        }
+
+        return logSum.doubleValue();
     }
 
     private double logSumProb(int[] reference, int maxEdits, int alphabetSize, int refIndex, int edits) {
@@ -162,7 +217,7 @@ public class InDelLikelihood {
         }
     }
 
-    public ArrayList<int[]> samples(int[] reference, int maxEdits, Random rng, int sampleCount) {
+    public ArrayList<int[]> samples(int[] reference,int sampleCount) {
         logSumProb(reference, maxEdits);
         ArrayList<int[]> list = new ArrayList<int[]>(sampleCount);
         for (int i = 0; i < sampleCount; i++) {
@@ -210,7 +265,7 @@ public class InDelLikelihood {
             if (m_a) {
                 logCuSum = addLogs(logCuSum, logSums[refIndex + 1][edits] - logDenom);
                 if (logCuSum > log_r) {
-                    sample[sampleIndex] = sampleMatch(reference[refIndex], rng);
+                    sample[sampleIndex] = sampleMatch(reference[refIndex]);
                     return sample(reference, maxEdits, rng, refIndex + 1, edits, sample, sampleIndex + 1);
                 }
             }
@@ -218,7 +273,7 @@ public class InDelLikelihood {
             if (s_a) {
                 logCuSum = addLogs(logCuSum, Math.log(lambda_s) + logSums[refIndex + 1][edits + 1] -logDenom);
                 if (logCuSum > log_r) {
-                    sample[sampleIndex] = sampleSubstitution(reference[refIndex], rng);
+                    sample[sampleIndex] = sampleSubstitution(reference[refIndex]);
                     return sample(reference, maxEdits, rng, refIndex + 1, edits + 1, sample, sampleIndex + 1);
                 }
             }
@@ -226,7 +281,7 @@ public class InDelLikelihood {
             if (i_a) {
                 logCuSum = addLogs(logCuSum, Math.log(lambda_i) + logSums[refIndex][edits + 1] - logDenom);
                 if (logCuSum > log_r) {
-                    sample[sampleIndex] = sampleInsertion(rng);
+                    sample[sampleIndex] = sampleInsertion();
                     return sample(reference, maxEdits, rng, refIndex, edits + 1, sample, sampleIndex + 1);
                 }
             }
@@ -243,7 +298,7 @@ public class InDelLikelihood {
         }
     }
 
-    private int sampleMatch(int ref, Random rng) {
+    private int sampleMatch(int ref) {
         if (ref < alphabetSize) {
             return ref;
         } else {
@@ -251,7 +306,7 @@ public class InDelLikelihood {
         }
     }
 
-    private int sampleSubstitution(int reference, Random rng) {
+    private int sampleSubstitution(int reference) {
         if (reference < alphabetSize) {
             double cuSum = 0d;
             double r = rng.nextDouble();
@@ -268,7 +323,7 @@ public class InDelLikelihood {
         }
     }
 
-    private int sampleInsertion(Random rng) {
+    private int sampleInsertion() {
         double cuSum = 0d;
         double r = rng.nextDouble();
         for (int i = 0; i < alphabetSize; i++) {
@@ -280,7 +335,7 @@ public class InDelLikelihood {
         throw new RuntimeException("should never get to here");
     }
 
-    private double addLogs(double logA, double logB) {
+    public static final double addLogs(double logA, double logB) {
         if (Double.isInfinite(logA) && Double.isInfinite(logB)) {
             if (logA < 0d && logB < 0d) {
                 return Double.NEGATIVE_INFINITY;
@@ -294,12 +349,57 @@ public class InDelLikelihood {
         }
     }
 
+    public void clear() {
+        logProbLookup = new HashMap<Key,Double>();
+        logSumLookup = new HashMap<KeySum,Double>();
+    }
+
+    private class Key {
+        public int[] _1;
+        public int[] _2;
+
+        @Override
+        public int hashCode() {
+            int hash = 5;
+            hash = 83 * hash + Arrays.hashCode(this._1);
+            hash = 83 * hash + Arrays.hashCode(this._2);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) {
+                return false;
+            } else if (o.getClass() == getClass()) {
+                return Arrays.equals(((Key) o)._1,_1) && Arrays.equals(((Key) o)._2,_2);
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private class KeySum {
+        public int[] key;
+        public int maxEdits;
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) {
+                return false;
+            } else if (o.getClass() == getClass()) {
+                return Arrays.equals(((KeySum) o).key,key) && ((KeySum) o).maxEdits == maxEdits;
+            } else {
+                return false;
+            }
+        }
+    }
+
     public static void main(String[] args) {
         int[] ref = new int[]{1, 2, 3, 4, 5, 6, 7};
         int[] r2 = new int[]{1, 1, 1, 1, 1, 1, 1};
         int[] read = new int[]{1, 2, 3, 4};
 
-        InDelLikelihood like = new InDelLikelihood();
+        InDelLikelihood like = new InDelLikelihood(10, new Random());
 
 
         System.out.println(like.logSumProb(ref, 15));
@@ -312,9 +412,9 @@ public class InDelLikelihood {
         }
         System.out.println();
 
-        ArrayList<int[]> samples = like.samples(ref, 15, new Random(), 100);
+        ArrayList<int[]> samples = like.samples(ref, 100);
         for (int[] sample : samples) {
-            System.out.println(Arrays.toString(sample) + ", " + Math.exp(like.logProb(ref, sample, 15)));
+            System.out.println(Arrays.toString(sample) + ", " + Math.exp(like.logProb(ref, sample)));
         }
     }
 }

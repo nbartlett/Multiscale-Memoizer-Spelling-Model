@@ -6,6 +6,7 @@
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -35,6 +36,25 @@ public class Util {
 
     public static void main(String[] args) {
         System.out.println(Arrays.toString(sampleWithoutReplacement(10)));
+
+        int[] key1 = new int[]{1,2,3};
+        int[] key2 = new int[]{1,2};
+        int[] key3 = new int[]{1,2,3};
+
+        HashMap<int[], Integer> map = new HashMap<int[], Integer>();
+
+        map.put(key1,1);
+        map.put(key2,2);
+        map.put(key3,3);
+
+        System.out.println(map.get(key1));
+        System.out.println(map.get(key2));
+        System.out.println(map.get(key3));
+        System.out.println(map.get(new int[]{1,2,3}));
+
+
+
+        
     }
 }
 

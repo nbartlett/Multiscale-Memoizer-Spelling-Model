@@ -32,4 +32,18 @@ public class MutableDouble {
     public void timesEquals(double factor) {
         value *= factor;
     }
+
+    public void addLogs(double log_something) {
+        if (Double.isInfinite(value) && Double.isInfinite(log_something)) {
+            if (value < 0d && log_something < 0d) {
+                value = Double.NEGATIVE_INFINITY;
+            } else {
+                throw new RuntimeException("basically shouldn't happen");
+            }
+        } else if (value > log_something) {
+            value = Math.log(1.0 + Math.exp(log_something - value)) + value;
+        } else {
+            value = Math.log(1.0 + Math.exp(value - log_something)) + log_something;
+        }
+    }
 }
