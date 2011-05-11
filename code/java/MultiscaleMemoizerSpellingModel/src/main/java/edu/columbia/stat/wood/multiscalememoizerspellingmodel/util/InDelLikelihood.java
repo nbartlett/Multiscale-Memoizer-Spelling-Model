@@ -25,8 +25,8 @@ public class InDelLikelihood implements Likelihood {
     private Key key = new Key();
     private KeySum keySum = new KeySum();
 
-    private HashMap<Key,DoubleTouchesPair> logProbLookup = new HashMap<Key,DoubleTouchesPair>();
-    private HashMap<KeySum,DoubleTouchesPair> logSumLookup = new HashMap<KeySum,DoubleTouchesPair>();
+    private HashMap<Key,DoubleTouchesPair> logProbLookup = new HashMap<Key,DoubleTouchesPair>(2000000);
+    private HashMap<KeySum,DoubleTouchesPair> logSumLookup = new HashMap<KeySum,DoubleTouchesPair>(2000000);
 
     private int alphabetSize = 26;
 
