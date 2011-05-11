@@ -75,11 +75,7 @@ public class Table extends Customer {
     }
 
     @Override
-    public String toString() {
-        if (size() > 1) {
-            System.out.println("table has multiple people customers : " + parameter);
-        }
-        
+    public String toString() {        
         String str = "";
         
         for (int i : parameter.value) {

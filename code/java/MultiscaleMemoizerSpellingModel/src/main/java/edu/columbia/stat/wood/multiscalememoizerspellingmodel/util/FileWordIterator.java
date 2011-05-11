@@ -4,7 +4,6 @@
  */
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +32,7 @@ public class FileWordIterator implements Iterator<int[]> {
         while (scanner.hasNext() && next == null) {
             String n = scanner.next();
             if (n.length() > 0) {
-                next = convert(n.replace("'", "").replace(" ", "").replaceAll("[0-9]","").toLowerCase());
+                next = convert(n.replaceAll("[ 0-9']+","").toLowerCase());
                 if (next.length == 0) {
                     next = null;
                 }
@@ -78,12 +77,13 @@ public class FileWordIterator implements Iterator<int[]> {
     public static void main(String[] args) throws FileNotFoundException, IOException {
         FileWordIterator fwi = new FileWordIterator(new File(args[0]));
         int i = 0;
+        //System.out.print(new Word(fwi.next()));
         while(fwi.hasNext()) {
             fwi.next();
             i++;
-            //System.out.println(new Word(fwi.next()));
+            //System.out.print(" " + new Word(fwi.next()));
         }
-        fwi.close();
         System.out.println(i);
+        fwi.close();
     }
 }

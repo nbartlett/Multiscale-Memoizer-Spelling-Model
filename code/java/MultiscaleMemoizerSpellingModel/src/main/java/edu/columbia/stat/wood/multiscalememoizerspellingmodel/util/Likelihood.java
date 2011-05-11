@@ -13,6 +13,4 @@ public interface Likelihood {
 
     double logProb(int[] reference, int[] read);
 
-    void clear();
-
 }

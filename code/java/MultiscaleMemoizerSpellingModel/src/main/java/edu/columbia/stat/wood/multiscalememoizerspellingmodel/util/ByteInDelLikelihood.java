@@ -33,6 +33,7 @@ public class ByteInDelLikelihood implements Likelihood{
         update();
     }
 
+    @Override
     public double logProb(int[] reference, int[] read) {
         assert reference.length == 8;
         assert read.length == 8;
@@ -41,6 +42,7 @@ public class ByteInDelLikelihood implements Likelihood{
         for (int i = 0; i < 8; i++) {
             if (reference[i] != read[i]) logProb += Math.log(lambda[i]);
         }
+        //System.out.println(logProb + ", " + logSum);
         return logProb - logSum;
     }
 

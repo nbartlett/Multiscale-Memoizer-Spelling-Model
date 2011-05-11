@@ -4,7 +4,6 @@
  */
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
@@ -27,6 +26,8 @@ public class Restaurant extends HashMap<Word, Restaurant> {
     public MutableDouble discount;
     public MutableDouble concentration;
     public int customers;
+    
+    public static int m = 3;
 
     public Restaurant(Restaurant parent, MutableDouble concentration, MutableDouble discount) {
         this.parent = parent;
@@ -75,7 +76,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                     tw += (double) t.size() - d;
                 }
             }
-            tw += d * (double) tables.size() + c;
+            tw += (d * (double) tables.size() + c) * parent.parameterProb(childTable.parameter);
 
             double cuSum = 0d;
             double r = Util.rng.nextDouble();
@@ -98,6 +99,21 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             tables.add(newTable);
             parent.seatWithParameter(newTable);
         }
+    }
+    
+    public double parameterProb(Word parameter) {
+        double prob = 0d;
+        
+        double c = concentration.doubleValue();
+        double d = discount.doubleValue();
+        
+        double denom = (double) customers + c;
+        
+        for (Table table : tables) {
+            if (table.parameter.equals(parameter)) prob += ((double) table.size() - d) / denom;
+        }
+        
+        return prob + (d * (double) tables.size() + c) * parent.parameterProb(parameter) / denom;
     }
 
     public void initSeatDatum(Datum datum) {
@@ -124,7 +140,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                     tw += (double) t.size() - d;
                 }
             }
-            tw += d * (double) tables.size() + c;
+            tw += (d * (double) tables.size() + c) * parent.parameterProb(datum.word);
 
             double cuSum = 0d;
             double r = Util.rng.nextDouble();
@@ -153,10 +169,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         MutableDouble log_tw = new MutableDouble(Double.NEGATIVE_INFINITY);
         double d = discount.doubleValue();
         double c = concentration.doubleValue();
-        int tbls = 0;
         Table emptyTable = null;
-
-        int m = 10;
 
         double log_w;
         double log_denom = Math.log((double) customers + c);
@@ -165,7 +178,6 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                 log_w = Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like); // memoizable?
                 log_tw.addLogs(log_w);
                 logWeightsTables.add(new Pair(table, log_w));
-                tbls++;
             } else {
                 emptyTable = table;
             }
@@ -176,14 +188,8 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         }
 
         ArrayList<Pair<Word, Double>> logWeightsParams = new ArrayList<Pair<Word, Double>>();
-        double logProbPrior = Math.log(d * (double) tbls + c) - log_denom;
-        parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, logProbPrior, m, emptyTable != null);
-
-        if (emptyTable != null) {
-            log_w = logProbPrior + customer.logLikelihood(emptyTable.parameter, like);
-            log_tw.addLogs(log_w);
-            logWeightsParams.add(new Pair(emptyTable.parameter, log_w));
-        }
+        double logProbPrior = Math.log(d * (double) tables.size() + c) - log_denom;
+        parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, logProbPrior, m, emptyTable);
 
         assert log_tw.doubleValue() > Double.NEGATIVE_INFINITY;
 
@@ -219,7 +225,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         throw new RuntimeException("Should never get down to here");
     }
 
-    public void parentParamsAndWeights(Customer customer, Likelihood like, ArrayList<Pair<Word,Double>> logWeightsParams, MutableDouble log_tw, double log_scalar, int m, boolean emptyTable){
+    public void parentParamsAndWeights(Customer customer, Likelihood like, ArrayList<Pair<Word,Double>> logWeightsParams, MutableDouble log_tw, double log_scalar, int m, Table emptyTable){
         double d = discount.doubleValue();
         double c = concentration.doubleValue();
         
@@ -243,6 +249,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         }
     }
 
+    /*
     public ArrayList<Word> generateParameters(int n) {
         ArrayList<Word> sample = new ArrayList<Word>(n);
         generateParameters(sample, Util.rng.nextDouble() / (double) n, n);
@@ -272,20 +279,21 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             double probParent = (d * (double) tables.size() + c) / ((double) customers + c);
             parent.generateParameters(sample, (r - probThis) / probParent, n);
         }
-    }
+    }*/
 
-    public void sample(Likelihood like) {
+    public void sample(Likelihood like, boolean onlyDatum) {
         HashSet<Table> copyTables = (HashSet<Table>) tables.clone();
-        
         for (Table table : copyTables) {
-            HashSet<Table> copyTableTables = (HashSet<Table>) table.tables.clone();
-            for (Table childTable : copyTableTables) {
-                table.tables.remove(childTable);
-                customers--;
-                if (table.size() == 0) {
-                    parent.unseat(table, table.parent);
+            if (!onlyDatum) {
+                HashSet<Table> copyTableTables = (HashSet<Table>) table.tables.clone();
+                for (Table childTable : copyTableTables) {
+                    table.tables.remove(childTable);
+                    customers--;
+                    if (table.size() == 0) {
+                        parent.unseat(table, table.parent);
+                    }
+                    seat(childTable, like);
                 }
-                seat(childTable, like);
             }
 
             HashMap<Datum, MutableInt> copyData = (HashMap<Datum, MutableInt>) table.data.clone();

@@ -7,8 +7,10 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.experiments;
 
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.HPYP;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Distribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.FileWordIterator;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -49,11 +51,13 @@ public class SpellingErrorAIW {
         PrintStream ps = new PrintStream(new FileOutputStream(out));
 
         for (int i = 0; i < 200; i++) {
-            hpyp.sample();
+            hpyp.sample(true);
             System.out.println(hpyp.score());
             ps.print(hpyp.score());
             ps.print(", ");
             hpyp.score(context, test, 2, ps);
         }
     }
+    
+
 }

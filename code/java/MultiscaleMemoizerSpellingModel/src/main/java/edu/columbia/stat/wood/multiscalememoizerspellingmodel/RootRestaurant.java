@@ -5,9 +5,7 @@
 
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.DiscreteLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Distribution;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Pair;
@@ -37,6 +35,11 @@ public class RootRestaurant extends Restaurant {
     }
     
     @Override
+    public double parameterProb(Word parameter) {
+        return Math.exp(baseDistribution.logProbability(parameter.value));
+    }
+    
+    @Override
     public void seat(Customer customer, Likelihood like) {
         throw new RuntimeException("not supported");
     }
@@ -52,6 +55,7 @@ public class RootRestaurant extends Restaurant {
         baseDistribution.decrementObservationCount(childTable.parameter.value);
     }
     
+    /*
     @Override
     public ArrayList<Word> generateParameters(int n) {
         ArrayList<Word> sample = new ArrayList<Word>(n);
@@ -65,10 +69,10 @@ public class RootRestaurant extends Restaurant {
             sample.add(new Word(baseDistribution.generate()));
             n--;
         }
-    }
+    }*/
 
     @Override
-    public void sample(Likelihood like) {
+    public void sample(Likelihood like, boolean onlyDatum) {
         baseDistribution.sample();
     }
 
@@ -78,13 +82,18 @@ public class RootRestaurant extends Restaurant {
     }
 
     @Override
-    public void parentParamsAndWeights(Customer customer, Likelihood like, ArrayList<Pair<Word,Double>> logWeightsParams, MutableDouble log_tw, double log_scalar, int m, boolean emptyTable){
+    public void parentParamsAndWeights(Customer customer, Likelihood like, ArrayList<Pair<Word,Double>> logWeightsParams, MutableDouble log_tw, double log_scalar, int m, Table emptyTable){
         double log_w;
         log_scalar -= Math.log(m);
         Word word;
-        if (emptyTable) {
+        
+        if (emptyTable != null) {
             m -= 1;
+            log_w = log_scalar + customer.logLikelihood(emptyTable.parameter, like);
+            logWeightsParams.add(new Pair(emptyTable.parameter, log_w));
+            log_tw.addLogs(log_w);
         }
+        
         for (int i = 0; i < m; i++) {
             log_w = log_scalar + customer.logLikelihood(word = new Word(baseDistribution.generate()), like);
             logWeightsParams.add(new Pair(word, log_w));

@@ -6,7 +6,12 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map.Entry;
 import java.util.Random;
 
 /**
@@ -15,17 +20,19 @@ import java.util.Random;
  */
 public class InDelLikelihood implements Likelihood {
 
+    public static int maxSizeLookup = 2000000;
+    
     private Key key = new Key();
     private KeySum keySum = new KeySum();
 
-    private HashMap<Key,Double> logProbLookup = new HashMap<Key,Double>();
-    private HashMap<KeySum,Double> logSumLookup = new HashMap<KeySum,Double>();
+    private HashMap<Key,DoubleTouchesPair> logProbLookup = new HashMap<Key,DoubleTouchesPair>();
+    private HashMap<KeySum,DoubleTouchesPair> logSumLookup = new HashMap<KeySum,DoubleTouchesPair>();
 
     private int alphabetSize = 26;
 
-    private double lambda_i = 0.001;
-    private double lambda_d = 0.001;
-    private double lambda_s = 0.001;
+    private double lambda_i = 0.4;
+    private double lambda_d = 0.4;
+    private double lambda_s = 0.1;
 
     private int maxEdits;
     private Random rng;
@@ -72,15 +79,16 @@ public class InDelLikelihood implements Likelihood {
     private byte[][] logSumContains;
     private double[][] logSums;
 
+    @Override
     public double logProb(int[] reference, int[] read) {
         key._1 = reference;
         key._2 = read;
-        Double logProb = logProbLookup.get(key);
+        DoubleTouchesPair logProb = logProbLookup.get(key);
 
         if (logProb == null) {
 
-            if (logProbLookup.size() > 1000000) {
-                logProbLookup.clear();
+            if (logProbLookup.size() > maxSizeLookup) {
+                cleanLogProb();
             }
 
             Key key = new Key();
@@ -90,10 +98,11 @@ public class InDelLikelihood implements Likelihood {
             logProbContains = new byte[reference.length + 1][read.length + 1][maxEdits + 1];
             logProbs = new double[reference.length + 1][read.length + 1][maxEdits + 1];
             
-            logProbLookup.put(key, logProb = new Double(logProb(reference, read, maxEdits, 0, 0, 0) - logSumProb(reference, maxEdits)));
+            logProbLookup.put(key, logProb = new DoubleTouchesPair(logProb(reference, read, maxEdits, 0, 0, 0) - logSumProb(reference, maxEdits)));
         }
+        logProb.touches++;
 
-        return logProb.doubleValue();
+        return logProb.d;
     }
 
     public int lookupSize() {
@@ -151,11 +160,11 @@ public class InDelLikelihood implements Likelihood {
     private double logSumProb(int[] reference, int maxEdits) {
         keySum.key = reference;
         keySum.maxEdits = maxEdits;
-        Double logSum = logSumLookup.get(keySum);
+        DoubleTouchesPair logSum = logSumLookup.get(keySum);
 
         if (logSum == null) {
-            if (logSumLookup.size() > 1000000) {
-                logSumLookup.clear();
+            if (logSumLookup.size() > maxSizeLookup) {
+                cleanLogSum();
             }
 
             KeySum keySum = new KeySum();
@@ -165,10 +174,11 @@ public class InDelLikelihood implements Likelihood {
             logSumContains = new byte[reference.length + 1][maxEdits + 1];
             logSums = new double[reference.length + 1][maxEdits + 1];
 
-            logSumLookup.put(keySum, logSum = logSumProb(reference, maxEdits, alphabetSize, 0, 0));
+            logSumLookup.put(keySum, logSum = new DoubleTouchesPair(logSumProb(reference, maxEdits, alphabetSize, 0, 0)));
         }
+        logSum.touches++;
 
-        return logSum.doubleValue();
+        return logSum.d;
     }
 
     private double logSumProb(int[] reference, int maxEdits, int alphabetSize, int refIndex, int edits) {
@@ -349,11 +359,46 @@ public class InDelLikelihood implements Likelihood {
         }
     }
 
-    public void clear() {
-        logProbLookup = new HashMap<Key,Double>();
-        logSumLookup = new HashMap<KeySum,Double>();
+    public void cleanLogProb() {
+        ArrayList<Entry<Key,DoubleTouchesPair>> list = new ArrayList<Entry<Key,DoubleTouchesPair>>(logProbLookup.entrySet());
+        Collections.sort(list, new Comp());
+        
+        int size = logProbLookup.size();
+        int targetSize = maxSizeLookup / 2;
+        Iterator<Entry<Key,DoubleTouchesPair>> iterator = list.iterator();
+        while (size-- > targetSize) {
+            logProbLookup.remove(iterator.next().getKey());
+        }
+        
+        while(iterator.hasNext()) {
+            iterator.next().getValue().touches = 0;
+        }
     }
-
+    
+    public void cleanLogSum() {
+        ArrayList<Entry<KeySum,DoubleTouchesPair>> list = new ArrayList<Entry<KeySum,DoubleTouchesPair>>(logSumLookup.entrySet());
+        Collections.sort(list, new Comp());
+        
+        int size = logProbLookup.size();
+        int targetSize = maxSizeLookup / 2;
+        Iterator<Entry<KeySum,DoubleTouchesPair>> iterator = list.iterator();
+        while (size-- > targetSize) {
+            logSumLookup.remove(iterator.next().getKey());
+        }   
+        
+        while(iterator.hasNext()) {
+            iterator.next().getValue().touches = 0;
+        }
+    }
+    
+    private class Comp implements Comparator<Entry<?,DoubleTouchesPair>> {
+        @Override
+        public int compare(Entry<?, DoubleTouchesPair> t, Entry<?, DoubleTouchesPair> t1) {
+            if (t.getValue().touches >= t1.getValue().touches) return 1;
+            else return 0;
+        }
+    }
+    
     private class Key {
         public int[] _1;
         public int[] _2;
@@ -362,7 +407,7 @@ public class InDelLikelihood implements Likelihood {
         public int hashCode() {
             int hash = 5;
             hash = 83 * hash + Arrays.hashCode(this._1);
-            hash = 83 * hash + Arrays.hashCode(this._2);
+            hash = 167 * hash + Arrays.hashCode(this._2);
             return hash;
         }
 
@@ -392,16 +437,55 @@ public class InDelLikelihood implements Likelihood {
                 return false;
             }
         }
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 89 * hash + Arrays.hashCode(this.key);
+            hash = 89 * hash + this.maxEdits;
+            return hash;
+        }
+    }
+    
+    private class DoubleTouchesPair {
+        public double d;
+        public int touches;
+        
+        public DoubleTouchesPair (double d) {
+            this.d = d;
+            touches = 0;
+        }
     }
 
     public static void main(String[] args) {
-        int[] ref = new int[]{1, 2, 3, 4, 5, 6, 7};
-        int[] r2 = new int[]{1, 1, 1, 1, 1, 1, 1};
-        int[] read = new int[]{1, 2, 3, 4};
+        int[] ref = new int[]{1, 2, 3, 4, 5};
+        //int[] read = new int[]{1, 2, 3, 4, 5, 6, 8, 9};
 
-        InDelLikelihood like = new InDelLikelihood(10, new Random());
-
-
+        InDelLikelihood like = new InDelLikelihood(5, new Random());
+        
+        int[] read = new int[5];
+        for (int i = 0; i < 60000; i++) {
+            read[0] = i / 10000;
+            read[1] = (i % 10000) / 1000 ;
+            read[2] = (i % 1000) / 100 ;
+            read[3] = (i % 100) / 10 ;
+            read[4] = (i % 10);
+            
+            like.logProb(read, ref);
+        }
+        
+        
+        for (int i = 0; i < 60000; i++) {
+            read[0] = i / 10000;
+            read[1] = (i % 10000) / 1000 ;
+            read[2] = (i % 1000) / 100 ;
+            read[3] = (i % 100) / 10 ;
+            read[4] = (i % 10);
+            
+            like.logProb(read, ref);
+        }
+        
+        /*
         System.out.println(like.logSumProb(ref, 15));
         System.out.println(Math.exp(like.logSumProb(ref, 15)));
 
@@ -416,5 +500,6 @@ public class InDelLikelihood implements Likelihood {
         for (int[] sample : samples) {
             System.out.println(Arrays.toString(sample) + ", " + Math.exp(like.logProb(ref, sample)));
         }
+        */
     }
 }

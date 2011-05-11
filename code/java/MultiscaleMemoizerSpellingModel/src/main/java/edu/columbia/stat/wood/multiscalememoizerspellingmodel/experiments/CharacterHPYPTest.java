@@ -31,10 +31,10 @@ public class CharacterHPYPTest {
         HPYP hpyp;
         int[] test;
         int[] context = new int[0];
-        int depth = 3;
+        int depth = 2;
 
         try {
-            fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/alice_in_wonderland.txt"));
+            fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt"));
 
             Word word;
             Integer translation;
@@ -51,16 +51,16 @@ public class CharacterHPYPTest {
             }
 
             fwi.close();
-            //System.out.println(dictionary.size());
+            System.out.println(dictionary.size());
 
-            fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/alice_in_wonderland.txt"));
+            fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt"));
             //hpyp = new HPYP(new D());
-            hpyp = new HPYP(new UniformIntegerDistribution(100000000));
+            hpyp = new HPYP(new UniformIntegerDistribution(100000));
 
             int w;
 
             int trainingSize = 20000;
-            test = new int[9760];
+            test = new int[9759];
             int j = 0;
 
             while (fwi.hasNext()) {
@@ -90,7 +90,7 @@ public class CharacterHPYPTest {
             }
         }
 
-        PrintStream ps = new PrintStream(new FileOutputStream(new File("/Users/nicholasbartlett/Desktop/aiw_100m.out")));
+        PrintStream ps = new PrintStream(new FileOutputStream(new File("/Users/nicholasbartlett/Desktop/aiw1.out")));
         for (int i = 0; i < 500; i++) {
             System.out.println(i);
             hpyp.sample();
@@ -100,7 +100,7 @@ public class CharacterHPYPTest {
         }
     }
 
-    private static class D implements Distribution<Integer> {
+/*    private static class D implements Distribution<Integer> {
 
         private HPYP hpyp = new HPYP(new UniformIntegerDistribution(27,1));
 
@@ -134,5 +134,5 @@ public class CharacterHPYPTest {
         public void sample() {
             hpyp.sample();
         }
-    }
+    }*/
 }
