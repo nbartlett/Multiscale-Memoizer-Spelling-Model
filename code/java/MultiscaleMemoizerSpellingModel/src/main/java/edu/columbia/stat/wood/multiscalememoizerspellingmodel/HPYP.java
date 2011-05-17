@@ -9,6 +9,7 @@ import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.FileWordItera
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
 import java.io.BufferedWriter;
@@ -16,6 +17,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  *
@@ -27,7 +33,7 @@ public class HPYP {
     public MutableDouble[] discounts;
     public RootRestaurant root;
     public Restaurant ecr;
-    public static Likelihood like;
+    public Likelihood like;
 
     public HPYP(Distribution<int[]> baseDistribution) {
         MutableDouble c0 = new MutableDouble(20);
@@ -68,6 +74,72 @@ public class HPYP {
     public double score() {
         return ecr.score(like) + root.score(like);
     }
+    
+    private double[] scoreByDepth() {
+        double[] score = new double[discounts.length];
+        ecr.score(like, score, 0);
+        return score;
+    }
+    
+    public double sampleDiscountsConcentrations() {
+        double stdDiscounts = 0.07;
+        double stdConcentrations = 0.7;
+        double[] currentScore = scoreByDepth();
+
+        // get the current values
+        double[] currentDiscounts = new double[discounts.length];
+        double[] currentConcentrations = new double[concentrations.length];
+        for (int i = 0; i < discounts.length; i++) {
+            currentDiscounts[i] = discounts[i].doubleValue();
+            currentConcentrations[i] = concentrations[i].doubleValue();
+        }
+
+        // make proposals for discounts
+        for (int i = 0; i < discounts.length; i++) {
+            discounts[i].plusEquals(stdDiscounts * Util.rng.nextGaussian());
+            if (discounts[i].doubleValue() >= 1.0 || discounts[i].doubleValue() <= 0.0) {
+                discounts[i].set(currentDiscounts[i]);
+            }
+        }
+
+        // get score given proposals
+        double[] afterScore = scoreByDepth();
+
+        // choose to accept or reject each proposal
+        for (int i = 0; i < discounts.length; i++) {
+            if (Util.rng.nextDouble() < Math.exp(afterScore[i] - currentScore[i])) {
+                currentScore[i] = afterScore[i];
+            } else {
+                discounts[i].set(currentDiscounts[i]);
+            }
+        }
+
+        //make proposals for concentrations
+        for (int i = 0; i < concentrations.length; i++) {
+            concentrations[i].plusEquals(stdConcentrations * Util.rng.nextGaussian());
+            if (concentrations[i].doubleValue() <= 0.0) {
+                concentrations[i].set(currentConcentrations[i]);
+            }
+        }
+
+        // get score given proposals
+        afterScore = scoreByDepth();
+
+        // choose to accept or reject each proposal
+        double score = 0.0;
+        for (int i = 0; i < concentrations.length; i++) {
+            double r = Math.exp(afterScore[i] - currentScore[i]);
+
+            if (Util.rng.nextDouble() < r) {
+                score += afterScore[i];
+            } else {
+                score += currentScore[i];
+                concentrations[i].set(currentConcentrations[i]);
+            }
+        }
+
+        return score + root.score(like);
+    }
 
     public void score(Word[] context, Word[] testSequence, int depth, PrintStream ps) throws Exception {
         Word[] cxt = new Word[depth];
@@ -83,21 +155,29 @@ public class HPYP {
                 }
                 cxt[depth - 1] = testWord;
             }
-            ps.println();
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
     }
+    
+    public double misspelledWords(HashSet<Word> lookup) {
+        int mispelledTables = 0;
+        
+        for (Table table : ecr.tables) {
+            if (!lookup.contains(table.parameter)) {
+                mispelledTables++;
+            }
+        }
+        
+        return (double) mispelledTables / (double) ecr.tables.size();
+    }
 
-    int sampleLikelihood = 1;
+
     public void sample(boolean onlyDatum) {
         root.sample(like, onlyDatum);
         sample(ecr,onlyDatum);
         root.sample(like, onlyDatum);
-        
-        //if (sampleLikelihood++ % 10 == 0) like.sample(this);
-        //sampleLikelihood %= 10;
     }
 
     public double logProbability(Word[] context, Word observation) {
@@ -145,6 +225,7 @@ public class HPYP {
         File out;
         int trainingSize;
         Word[] test;
+        boolean sampleLike = true;
         if (args.length == 0) {
             //in = new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/multiscale_parsed_aiw.txt");
             in = new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt");
@@ -157,6 +238,7 @@ public class HPYP {
             out = new File(args[1]);
             trainingSize = Integer.parseInt(args[2]);
             test = new Word[Integer.parseInt(args[3])];
+            sampleLike = Boolean.parseBoolean(args[4]);
         }
 
         int d = 2;
@@ -183,28 +265,17 @@ public class HPYP {
                     else break;
                 }
             }
-
-            System.out.println(hpyp.score() + ", ," + hpyp.ecr.checkParameterValueConsistency());
         } finally {
             if (fwi != null) {
                 fwi.close();
             }
         }
+
+        System.out.println(hpyp.score());
+        System.out.println(hpyp.root.score(hpyp.like));
+        System.out.println(Arrays.toString(hpyp.scoreByDepth()));
         
-        PrintStream ps = new PrintStream(new FileOutputStream(out));
-        long start_time;
-        for (int i = 1; i < 2000; i++) {
-            start_time = System.currentTimeMillis();
-            if (i % 25 == 0) {
-                hpyp.sample(false);
-            } else {
-                hpyp.sample(true);
-            }
-            System.out.println(hpyp.score() + "," + (double)(System.currentTimeMillis() - start_time)/1000);
-            ps.print(hpyp.score() + ", " + ((InDelLikelihood)hpyp.like).lambda_i + ", " + ((InDelLikelihood)hpyp.like).lambda_s + ", " + ((InDelLikelihood)hpyp.like).lambda_d  + ", ");
-            hpyp.score(context, test, d, ps);
-        }
-        ps.close();
-        System.out.print(hpyp);
+        
+        
     }
 }

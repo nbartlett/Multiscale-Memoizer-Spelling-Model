@@ -50,7 +50,7 @@ public class InDelLikelihood implements Likelihood {
             current = lambda_i;
             lambda_i += std * Util.rng.nextGaussian();
 
-            if (lambda_i >= 0.99 || lambda_i <= 0.01) {
+            if (lambda_i >= 0.9999 || lambda_i <= 0.0001) {
                 lambda_i = current;
                 continue;
             }
@@ -68,7 +68,7 @@ public class InDelLikelihood implements Likelihood {
             current = lambda_s;
             lambda_s += std * Util.rng.nextGaussian();
 
-            if (lambda_s >= 0.99 || lambda_s <= 0.01) {
+            if (lambda_s >= 0.9999 || lambda_s <= 0.0001) {
                 lambda_s = current;
                 continue;
             }
@@ -86,7 +86,7 @@ public class InDelLikelihood implements Likelihood {
             current = lambda_d;
             lambda_d += std * Util.rng.nextGaussian();
 
-            if (lambda_d >= 0.99 || lambda_d <= 0.01) {
+            if (lambda_d >= 0.9999 || lambda_d <= 0.0001) {
                 lambda_d = current;
                 continue;
             }
@@ -97,9 +97,9 @@ public class InDelLikelihood implements Likelihood {
                 score = pscore;
             } else {
                 lambda_d = current;
-                clear();
             }
         }
+        clear();
     }
 
     public void clear() {

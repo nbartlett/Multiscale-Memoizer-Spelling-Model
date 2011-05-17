@@ -288,10 +288,6 @@ public class Restaurant extends HashMap<Word, Restaurant> {
 
     public void sample(Likelihood like, boolean onlyDatum) {
         
-        if (Double.isInfinite(score(HPYP.like))) {
-            System.out.println();
-        }
-        
         HashSet<Table> copyTables = (HashSet<Table>) tables.clone();
         for (Table table : copyTables) {
             if (!onlyDatum) {
@@ -324,16 +320,8 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                     }
 
                     seat(entry.getKey(), like);
-                    if (Double.isInfinite(score(HPYP.like))) {
-                        System.out.println();
-                    }
                 }
             }
-        }
-        
-        
-        if (Double.isInfinite(score(HPYP.like))) {
-            System.out.println();
         }
     }
 
@@ -372,9 +360,6 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                 score -= Math.log((double) custs + c);
                 cust++;
                 custs++;
-                if (Double.isInfinite(score)) {
-                        System.out.println();
-                    }
             }
 
             for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
@@ -388,31 +373,57 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                 score += entry.getKey().logLikelihood(table.parameter, like) * (double) entry.getValue().intValue();
                 cust++;
                 custs++;
-                
-                if (Double.isInfinite(score)) {
-                        System.out.println();
-                    }
             }
             tbls++;
         }
-        
-        
-                    
+                     
         for (Restaurant child : values()) {
             score += child.score(like);
         } 
         
-        if (Double.isInfinite(score)) {
-            for (Table table : tables) {
-                for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
-                    System.out.println(Arrays.toString(entry.getKey().word.value));
-                    System.out.println(Arrays.toString(table.parameter.value));
+        return score;
+    }
+    
+    public void score(Likelihood like, double[] s, int depth) {
+        double score = 0d;
+        double d = discount.doubleValue();
+        double c = concentration.doubleValue();
+
+        int tbls = 0;
+        int custs = 0;
+
+        for (Table table : tables) {
+            int cust = 0;
+            for (int t = 0; t < table.tables.size(); t++) {
+                if (tbls == 0 && cust == 0); else if (cust == 0) {
+                    score += Math.log(d * (double) tbls + c);
+                } else {
+                    score += Math.log((double) cust - d);
                 }
+                score -= Math.log((double) custs + c);
+                cust++;
+                custs++;
             }
-            System.out.println();
+
+            for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
+                if (tbls == 0 && cust == 0); else if (cust == 0) {
+                    score += Math.log(d * (double) tbls + c);
+                } else {
+                    score += Math.log((double) cust - d);
+                }
+                score -= Math.log((double) custs + c);
+                
+                score += entry.getKey().logLikelihood(table.parameter, like) * (double) entry.getValue().intValue();
+                cust++;
+                custs++;
+            }
+            tbls++;
         }
         
-        return score;
+        s[depth < s.length ? depth : (s.length - 1)] += score;
+        for (Restaurant child : values()) {
+            child.score(like, s, depth + 1);
+        }
     }
 
     public boolean checkCustomerCounts() {
