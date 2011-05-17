@@ -6,6 +6,7 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,7 +68,7 @@ public class Table extends Customer {
         return logLike;
     }
     
-    public void updateParameter(Word parameter) {
+    public void updateParameter(Word parameter) {        
         this.parameter = parameter;
         for (Table table : tables) {
             table.updateParameter(parameter);
@@ -96,5 +97,11 @@ public class Table extends Customer {
         }
 
         return str;
+    }
+    
+    public boolean checkParameterValueConsistency(Word word) {
+        boolean p = true;
+        if (parent != null) p = parent.checkParameterValueConsistency(word);
+        return p && parameter.equals(word);
     }
 }

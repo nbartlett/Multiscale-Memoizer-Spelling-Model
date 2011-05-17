@@ -75,7 +75,7 @@ public class FileWordIterator implements Iterator<int[]> {
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
-        FileWordIterator fwi = new FileWordIterator(new File(args[0]));
+/*        FileWordIterator fwi = new FileWordIterator(new File(args[0]));
         int i = 0;
         //System.out.print(new Word(fwi.next()));
         while(fwi.hasNext()) {
@@ -84,6 +84,27 @@ public class FileWordIterator implements Iterator<int[]> {
             //System.out.print(" " + new Word(fwi.next()));
         }
         System.out.println(i);
-        fwi.close();
+        fwi.close();*/
+        
+        System.out.println("testing something");
+        
+        Integer _1 = new Integer(1);
+        Integer _2 = new Integer(2);
+        Integer _3 = _1;
+        Integer _4 = _3;
+       
+        System.out.println(_1);
+        System.out.println(_2);
+        System.out.println(_3);
+        System.out.println(_4);
+        
+        _3 = _2;
+        
+        System.out.println(_1);
+        System.out.println(_2);
+        System.out.println(_3);
+        System.out.println(_4);
+        
+        
     }
 }

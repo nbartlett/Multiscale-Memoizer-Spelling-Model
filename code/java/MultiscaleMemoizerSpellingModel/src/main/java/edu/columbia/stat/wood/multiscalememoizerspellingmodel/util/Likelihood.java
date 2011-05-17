@@ -5,6 +5,8 @@
 
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.HPYP;
+
 /**
  *
  * @author nicholasbartlett
@@ -12,5 +14,7 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 public interface Likelihood {
 
     double logProb(int[] reference, int[] read);
+    
+    void sample (HPYP hpyp);
 
 }

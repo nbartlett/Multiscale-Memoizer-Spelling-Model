@@ -27,7 +27,7 @@ public class HPYP {
     public MutableDouble[] discounts;
     public RootRestaurant root;
     public Restaurant ecr;
-    public Likelihood like;
+    public static Likelihood like;
 
     public HPYP(Distribution<int[]> baseDistribution) {
         MutableDouble c0 = new MutableDouble(20);
@@ -46,7 +46,7 @@ public class HPYP {
         root = new RootRestaurant(baseDistribution);
         ecr = new Restaurant(root, concentrations[0], discounts[0]);
 
-        like = new InDelLikelihood(2, Util.rng);
+        like = new InDelLikelihood(2,26, Util.rng);
     }
 
     public Restaurant get(Word[] context) {
@@ -66,7 +66,7 @@ public class HPYP {
     }
 
     public double score() {
-        return score(ecr) + root.score(like);
+        return ecr.score(like) + root.score(like);
     }
 
     public void score(Word[] context, Word[] testSequence, int depth, PrintStream ps) throws Exception {
@@ -90,10 +90,14 @@ public class HPYP {
         }
     }
 
+    int sampleLikelihood = 1;
     public void sample(boolean onlyDatum) {
         root.sample(like, onlyDatum);
         sample(ecr,onlyDatum);
         root.sample(like, onlyDatum);
+        
+        //if (sampleLikelihood++ % 10 == 0) like.sample(this);
+        //sampleLikelihood %= 10;
     }
 
     public double logProbability(Word[] context, Word observation) {
@@ -146,8 +150,8 @@ public class HPYP {
             in = new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt");
             //in = new File("/Users/nicholasbartlett/Desktop/small_test_data.txt");
             out = new File("/Users/nicholasbartlett/Documents/np_bayes/Multiscale_Memoizer_Spelling_Model/output/aiw_spelling.out");
-            trainingSize = 2000;
-            test = new Word[9759];
+            trainingSize = 20000;
+            test = new Word[0];
         } else {
             in = new File(args[0]);
             out = new File(args[1]);
@@ -168,7 +172,7 @@ public class HPYP {
             int i = 0;
             while (fwi.hasNext()) {
                 trainingSize--;
-                if (trainingSize > 0) {
+                if (trainingSize >= 0) {
                     hpyp.seatInit(context, w = new Word(fwi.next()));
                     for (int j = 1; j < d; j++) {
                         context[j - 1] = context[j];
@@ -180,7 +184,7 @@ public class HPYP {
                 }
             }
 
-            System.out.println(hpyp.score() + ", ,");
+            System.out.println(hpyp.score() + ", ," + hpyp.ecr.checkParameterValueConsistency());
         } finally {
             if (fwi != null) {
                 fwi.close();
@@ -189,16 +193,15 @@ public class HPYP {
         
         PrintStream ps = new PrintStream(new FileOutputStream(out));
         long start_time;
-        for (int i = 0; i < 200; i++) {
+        for (int i = 1; i < 2000; i++) {
             start_time = System.currentTimeMillis();
             if (i % 25 == 0) {
                 hpyp.sample(false);
             } else {
                 hpyp.sample(true);
             }
-            System.out.println(((InDelLikelihood)hpyp.like).lookupSize() + ", " + hpyp.score() + "," + (double)(System.currentTimeMillis() - start_time)/1000);
-            ps.print(hpyp.score());
-            ps.print(", ");
+            System.out.println(hpyp.score() + "," + (double)(System.currentTimeMillis() - start_time)/1000);
+            ps.print(hpyp.score() + ", " + ((InDelLikelihood)hpyp.like).lambda_i + ", " + ((InDelLikelihood)hpyp.like).lambda_s + ", " + ((InDelLikelihood)hpyp.like).lambda_d  + ", ");
             hpyp.score(context, test, d, ps);
         }
         ps.close();

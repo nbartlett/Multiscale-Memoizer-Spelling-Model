@@ -87,6 +87,8 @@ public class RootRestaurant extends Restaurant {
         log_scalar -= Math.log(m);
         Word word;
         
+        assert !Double.isInfinite(log_scalar);
+        
         if (emptyTable != null) {
             m -= 1;
             log_w = log_scalar + customer.logLikelihood(emptyTable.parameter, like);

@@ -45,5 +45,8 @@ public class MutableDouble {
         } else {
             value = Math.log(1.0 + Math.exp(value - log_something)) + log_something;
         }
+        if (Double.isNaN(value)) {
+            System.out.println();
+        }
     }
 }

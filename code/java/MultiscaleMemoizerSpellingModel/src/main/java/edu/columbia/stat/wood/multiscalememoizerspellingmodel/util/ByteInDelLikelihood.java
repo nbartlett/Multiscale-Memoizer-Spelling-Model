@@ -10,7 +10,7 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
  *
  * @author nicholasbartlett
  */
-public class ByteInDelLikelihood implements Likelihood{
+public class ByteInDelLikelihood { //implements Likelihood{
 
     private double[] lambda = new double[]{0.0
                                           ,0.0
@@ -33,7 +33,7 @@ public class ByteInDelLikelihood implements Likelihood{
         update();
     }
 
-    @Override
+    //@Override
     public double logProb(int[] reference, int[] read) {
         assert reference.length == 8;
         assert read.length == 8;

@@ -14,8 +14,7 @@ import java.util.Random;
  * @author nicholasbartlett
  */
 public class Util {
-    public static Random rng = new Random();
-
+    public static Random rng = new Random(9);
     public static int[] sampleWithoutReplacement(int n) {
         int[] sample = new int[n];
 

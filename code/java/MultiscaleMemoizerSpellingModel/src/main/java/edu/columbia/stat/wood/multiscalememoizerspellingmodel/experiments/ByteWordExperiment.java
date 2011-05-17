@@ -23,7 +23,7 @@ public class ByteWordExperiment {
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
         HPYP hpyp = new HPYP(new ByteWordUniformDistribution());
-        hpyp.like = new ByteInDelLikelihood();
+//        hpyp.like = new ByteInDelLikelihood();
 
         File in = new File("/Users/nicholasbartlett/Desktop/small_test_data.txt");
 

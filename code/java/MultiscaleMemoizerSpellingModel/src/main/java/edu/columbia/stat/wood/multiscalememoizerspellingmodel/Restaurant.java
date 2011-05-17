@@ -10,6 +10,7 @@ import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Pair;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.HashSet;
@@ -27,7 +28,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
     public MutableDouble concentration;
     public int customers;
     
-    public static int m = 3;
+    public static int m = 10;
 
     public Restaurant(Restaurant parent, MutableDouble concentration, MutableDouble discount) {
         this.parent = parent;
@@ -175,10 +176,13 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         double log_denom = Math.log((double) customers + c);
         for (Table table : tables) {
             if (table.size() > 0) {
-                log_w = Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like); // memoizable?
+                log_w = Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like);
                 log_tw.addLogs(log_w);
                 logWeightsTables.add(new Pair(table, log_w));
             } else {
+                if (emptyTable != null) {
+                    throw new RuntimeException("should only be one empty table at most");
+                }
                 emptyTable = table;
             }
         }
@@ -192,6 +196,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, logProbPrior, m, emptyTable);
 
         assert log_tw.doubleValue() > Double.NEGATIVE_INFINITY;
+        assert !Double.isNaN(log_tw.doubleValue());
 
         double log_r = Math.log(Util.rng.nextDouble());
         double cuSum = Double.NEGATIVE_INFINITY;
@@ -200,7 +205,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         for (Pair<Table, Double> pair : logWeightsTables) {
             cuSum = addLogs(cuSum, pair.second() - log_total_weight);
             if (cuSum > log_r) {
-                pair.first().seat(customer);
+                pair.first().seat(customer);                                              
                 customers++;
                 return;
             }
@@ -208,7 +213,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
 
         for (Pair<Word, Double> pair : logWeightsParams) {
             cuSum = addLogs(cuSum, pair.second() - log_total_weight);
-            if (cuSum > log_r) {
+            if (cuSum > log_r) {                
                 Table table = new Table();
                 table.parameter = pair.first();
                 tables.add(table);
@@ -282,6 +287,11 @@ public class Restaurant extends HashMap<Word, Restaurant> {
     }*/
 
     public void sample(Likelihood like, boolean onlyDatum) {
+        
+        if (Double.isInfinite(score(HPYP.like))) {
+            System.out.println();
+        }
+        
         HashSet<Table> copyTables = (HashSet<Table>) tables.clone();
         for (Table table : copyTables) {
             if (!onlyDatum) {
@@ -298,19 +308,32 @@ public class Restaurant extends HashMap<Word, Restaurant> {
 
             HashMap<Datum, MutableInt> copyData = (HashMap<Datum, MutableInt>) table.data.clone();
             for (Entry<Datum, MutableInt> entry : copyData.entrySet()) {
-                MutableInt count = entry.getValue();
-                if (count.intValue() == 1) {
-                    table.data.remove(entry.getKey());
-                } else {
-                    count.decrement();
-                }
-                customers--;
-                if (table.size() == 0) {
-                    parent.unseat(table, table.parent);
-                }
+                int cnt = entry.getValue().intValue();
+                Datum datum = entry.getKey();
+                for (int i = 0; i < cnt; i++) {
+                    if (table.data.get(datum).intValue() == 1) {
+                        table.data.remove(datum);
+                    } else {
+                        entry.getValue().decrement();
+                    }
+                    
+                    customers--;
+                    
+                    if (table.size() == 0) {
+                        parent.unseat(table, table.parent);
+                    }
 
-                seat(entry.getKey(), like);
+                    seat(entry.getKey(), like);
+                    if (Double.isInfinite(score(HPYP.like))) {
+                        System.out.println();
+                    }
+                }
             }
+        }
+        
+        
+        if (Double.isInfinite(score(HPYP.like))) {
+            System.out.println();
         }
     }
 
@@ -349,6 +372,9 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                 score -= Math.log((double) custs + c);
                 cust++;
                 custs++;
+                if (Double.isInfinite(score)) {
+                        System.out.println();
+                    }
             }
 
             for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
@@ -358,13 +384,34 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                     score += Math.log((double) cust - d);
                 }
                 score -= Math.log((double) custs + c);
-
+                
                 score += entry.getKey().logLikelihood(table.parameter, like) * (double) entry.getValue().intValue();
                 cust++;
                 custs++;
+                
+                if (Double.isInfinite(score)) {
+                        System.out.println();
+                    }
             }
             tbls++;
         }
+        
+        
+                    
+        for (Restaurant child : values()) {
+            score += child.score(like);
+        } 
+        
+        if (Double.isInfinite(score)) {
+            for (Table table : tables) {
+                for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
+                    System.out.println(Arrays.toString(entry.getKey().word.value));
+                    System.out.println(Arrays.toString(table.parameter.value));
+                }
+            }
+            System.out.println();
+        }
+        
         return score;
     }
 
@@ -392,6 +439,21 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         }
 
         return count;
+    }
+    
+    public boolean checkParameterValueConsistency(){
+        if (isEmpty()) {
+            for (Table table : tables) {
+                if (!table.checkParameterValueConsistency(table.parameter)) return false;
+            }
+            return true;
+        } else {
+            boolean p = true;
+            for (Restaurant child : this.values()) {
+                if (!child.checkCustomerCounts()) return false;
+            }
+            return true;
+        }
     }
 
     @Override
