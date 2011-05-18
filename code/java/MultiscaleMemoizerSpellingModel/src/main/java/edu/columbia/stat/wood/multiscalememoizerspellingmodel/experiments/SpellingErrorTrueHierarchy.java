@@ -135,8 +135,10 @@ public class SpellingErrorTrueHierarchy {
             ps.print(hpyp.score() + ", ");            
             double p = 0d;
             System.arraycopy(context, 0, tContext, 0, context.length);
-            tContext = context;
             for (Word w : testContext) {
+                if (w.value == null) {
+                    w.value = new int[0];
+                }
                 p = hpyp.logProbability(tContext, w);
                 
                 ps.print(p + ",");
