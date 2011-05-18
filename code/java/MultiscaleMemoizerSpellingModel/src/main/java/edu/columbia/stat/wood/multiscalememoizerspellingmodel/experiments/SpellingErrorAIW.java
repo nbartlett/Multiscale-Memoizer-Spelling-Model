@@ -101,7 +101,7 @@ public class SpellingErrorAIW {
 
         PrintStream ps = null;
         try {
-            ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(out)));
+            ps = new PrintStream(new FileOutputStream(out));
             long start_time;
 
             for (int i = 1; i < iterations; i++) {
