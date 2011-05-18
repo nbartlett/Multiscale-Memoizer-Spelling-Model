@@ -55,7 +55,7 @@ public class CharacterHPYPTest {
 
             fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt"));
             //hpyp = new HPYP(new D());
-            hpyp = new HPYP(new UniformIntegerDistribution(100000));
+            hpyp = new HPYP(new UniformIntegerDistribution(1000000));
 
             int w;
 
@@ -91,7 +91,7 @@ public class CharacterHPYPTest {
         }
 
         PrintStream ps = new PrintStream(new FileOutputStream(new File("/Users/nicholasbartlett/Desktop/aiw1.out")));
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < 2000; i++) {
             System.out.println(i);
             hpyp.sample();
             ps.print(hpyp.score());

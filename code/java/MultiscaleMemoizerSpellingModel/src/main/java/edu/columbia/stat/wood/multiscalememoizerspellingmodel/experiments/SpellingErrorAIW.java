@@ -26,7 +26,6 @@ import java.util.HashSet;
 public class SpellingErrorAIW {
 
     public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
-        System.out.println("What the fuck is going on");
         File in;
         File out;
         File aiw;
@@ -44,7 +43,7 @@ public class SpellingErrorAIW {
             test = new Word[0];
             sampleLike = true;
             sampleDiscConc = true;
-            iterations = 10;
+            iterations = 10;    
         } else {
             in = new File(args[0]);
             out = new File(args[1]);
