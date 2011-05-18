@@ -4,11 +4,14 @@
  */
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.Scanner;
 
@@ -74,37 +77,21 @@ public class FileWordIterator implements Iterator<int[]> {
         }
     }
 
-    public static void main(String[] args) throws FileNotFoundException, IOException {
-/*        FileWordIterator fwi = new FileWordIterator(new File(args[0]));
+    /*public static void main(String[] args) throws FileNotFoundException, IOException {
+        FileWordIterator fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/alice_in_wonderland.txt"));
+        PrintStream out = new PrintStream(new FileOutputStream(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt")));
+        
         int i = 0;
-        //System.out.print(new Word(fwi.next()));
+        Word w;
         while(fwi.hasNext()) {
-            fwi.next();
             i++;
-            //System.out.print(" " + new Word(fwi.next()));
+            w = new Word(fwi.next());
+            if (Util.rng.nextDouble() < 0.1) w.corrupt();
+            if (i == 0) out.print(w.toString()); 
+            else out.print(" " + w.toString());
         }
         System.out.println(i);
-        fwi.close();*/
-        
-        System.out.println("testing something");
-        
-        Integer _1 = new Integer(1);
-        Integer _2 = new Integer(2);
-        Integer _3 = _1;
-        Integer _4 = _3;
-       
-        System.out.println(_1);
-        System.out.println(_2);
-        System.out.println(_3);
-        System.out.println(_4);
-        
-        _3 = _2;
-        
-        System.out.println(_1);
-        System.out.println(_2);
-        System.out.println(_3);
-        System.out.println(_4);
-        
-        
-    }
+        fwi.close();
+        out.close();
+    }*/
 }

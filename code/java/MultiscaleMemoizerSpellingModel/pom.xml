@@ -23,6 +23,12 @@
     -->
     
     <dependencies>
+        <!--<dependency>
+            <groupId>edu.upenn.cis</groupId>
+            <artifactId>spelling</artifactId>
+            <version>1.0</version>
+             <type>jar</type>
+         </dependency>-->
     </dependencies>
 
     <build>

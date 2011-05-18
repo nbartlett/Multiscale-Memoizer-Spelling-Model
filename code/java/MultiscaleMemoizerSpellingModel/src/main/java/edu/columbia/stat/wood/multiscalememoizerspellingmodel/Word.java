@@ -5,6 +5,7 @@
 
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
+import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
 import java.util.Arrays;
 
 /**
@@ -28,6 +29,31 @@ public class Word {
         int hash = 3;
         hash = 11 * hash + Arrays.hashCode(this.value);
         return hash;
+    }
+    
+    public void corrupt() {
+        if (value.length > 1) {
+            if (Util.rng.nextDouble() < 0.1) {
+                int[] newValue = new int[value.length - 1];
+                int remove = (int) Util.rng.nextDouble() * value.length;
+                System.arraycopy(value,0,newValue,0,remove);
+                System.arraycopy(value,remove+1, newValue,remove, value.length - 1 - remove);
+                value = newValue;
+                return;
+            }
+        }
+        
+        if (Util.rng.nextDouble() < 0.5) {
+            int[] newValue = new int[value.length + 1];
+            int insert = (int) (Util.rng.nextDouble() * value.length);
+            System.arraycopy(value,0,newValue,0,insert);
+            newValue[insert] = (int) (Util.rng.nextDouble() * 26d);
+            System.arraycopy(value,insert,newValue,insert+1,value.length - insert);
+            value = newValue;
+            return;
+        } else {
+            value[(int) Util.rng.nextDouble() * value.length] = (int) (Util.rng.nextDouble() * 26d);   
+        }
     }
 
     @Override
