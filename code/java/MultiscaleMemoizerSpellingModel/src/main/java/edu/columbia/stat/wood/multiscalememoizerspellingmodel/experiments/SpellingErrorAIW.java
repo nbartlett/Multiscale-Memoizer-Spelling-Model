@@ -99,39 +99,34 @@ public class SpellingErrorAIW {
             }
         }
 
-        PrintStream ps = null;
-        try {
-            ps = new PrintStream(new FileOutputStream(out));
-            long start_time;
+        PrintStream ps = new PrintStream(new FileOutputStream(out));
+        long start_time;
 
-            for (int i = 1; i < iterations; i++) {
-                start_time = System.currentTimeMillis();
+        for (int i = 1; i < iterations; i++) {
+            start_time = System.currentTimeMillis();
 
-                if (sampleDiscConc) {
-                    hpyp.sampleDiscountsConcentrations();
-                }
-
-                if (sampleLike) {
-                    if (i >= 100 && i % 5 == 0) {
-                        hpyp.like.sample(hpyp);
-                    }
-                }
-
-                if (i % 10 == 0) {
-                    hpyp.sample(false);
-                } else {
-                    hpyp.sample(true);
-                }
-
-                System.out.println(i + "," + (double) (System.currentTimeMillis() - start_time) / 1000 + ", " + hpyp.score() + ", " + hpyp.misspelledWords(trueWords) + ", " + ((InDelLikelihood) hpyp.like).lambda_i + ", " + ((InDelLikelihood) hpyp.like).lambda_s + ", " + ((InDelLikelihood) hpyp.like).lambda_d);
-
-                ps.print(hpyp.score() + ", ");
-                hpyp.score(context, test, d, ps);
-                ps.println();
+            if (sampleDiscConc) {
+                hpyp.sampleDiscountsConcentrations();
             }
-        } finally {
-            ps.flush();
-            ps.close();
+
+            if (sampleLike) {
+                if (i >= 100 && i % 5 == 0) {
+                    hpyp.like.sample(hpyp);
+                }
+            }
+
+            if (i % 10 == 0) {
+                hpyp.sample(false);
+            } else {
+                hpyp.sample(true);
+            }
+
+            System.out.println(i + "," + (double) (System.currentTimeMillis() - start_time) / 1000 + ", " + hpyp.score() + ", " + hpyp.misspelledWords(trueWords) + ", " + ((InDelLikelihood) hpyp.like).lambda_i + ", " + ((InDelLikelihood) hpyp.like).lambda_s + ", " + ((InDelLikelihood) hpyp.like).lambda_d);
+
+            ps.print(hpyp.score() + ", ");
+            hpyp.score(context, test, d, ps);
+            ps.println();
         }
+        ps.close();
     }
 }
