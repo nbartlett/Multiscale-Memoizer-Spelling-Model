@@ -26,6 +26,7 @@ import java.util.HashSet;
 public class SpellingErrorAIW {
 
     public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
+        System.out.println("What the fuck is going on");
         File in;
         File out;
         File aiw;
