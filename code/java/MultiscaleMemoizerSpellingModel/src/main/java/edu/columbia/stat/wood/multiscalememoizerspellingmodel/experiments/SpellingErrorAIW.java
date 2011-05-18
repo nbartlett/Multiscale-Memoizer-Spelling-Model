@@ -12,6 +12,7 @@ import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.FileWordItera
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -96,7 +97,7 @@ public class SpellingErrorAIW {
             }
         }  
         
-        PrintStream ps = new PrintStream(new FileOutputStream(out));
+        PrintStream ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(out)));
         long start_time;
         
         for (int i = 1; i < iterations; i++) {
