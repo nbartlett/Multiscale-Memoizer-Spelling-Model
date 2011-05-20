@@ -271,6 +271,10 @@ public class HPYP implements Distribution<int[]>{
         }
     }
 
+    public double prob(int[] context, int w) {
+        return get(context).probability(w);
+    }
+    
     private Restaurant get(int[] context) {
         if (context == null || context.length == 0) {
             return ecr;

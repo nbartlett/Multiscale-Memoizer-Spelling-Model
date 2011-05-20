@@ -32,7 +32,7 @@ public class HPYP {
     public MutableDouble[] concentrations;
     public MutableDouble[] discounts;
     public RootRestaurant root;
-    public Restaurant ecr;
+    public static Restaurant ecr;
     public Likelihood like;
 
     public HPYP(Distribution<int[]> baseDistribution) {
@@ -231,7 +231,7 @@ public class HPYP {
             in = new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt");
             //in = new File("/Users/nicholasbartlett/Desktop/small_test_data.txt");
             out = new File("/Users/nicholasbartlett/Documents/np_bayes/Multiscale_Memoizer_Spelling_Model/output/aiw_spelling.out");
-            trainingSize = 20000;
+            trainingSize = 2000;
             test = new Word[0];
         } else {
             in = new File(args[0]);
@@ -275,7 +275,9 @@ public class HPYP {
         System.out.println(hpyp.root.score(hpyp.like));
         System.out.println(Arrays.toString(hpyp.scoreByDepth()));
         
-        
-        
+        for (int j = 0; j < 100; j++) {
+            hpyp.sample(false);
+            System.out.println(j);//+ ", " + hpyp.score());
+        }
     }
 }

@@ -117,11 +117,12 @@ public class SpellingErrorAIW {
                 }
             }
 
-            if (i % 10 == 0) {
+            /*if (i % 10 == 0) {
                 hpyp.sample(false);
             } else {
                 hpyp.sample(true);
-            }
+            }*/
+            hpyp.sample(false);
 
             System.out.println(i + "," + (double) (System.currentTimeMillis() - start_time) / 1000 + ", " + hpyp.score() + ", " + hpyp.misspelledWords(trueWords) + ", " + ((InDelLikelihood) hpyp.like).lambda_i + ", " + ((InDelLikelihood) hpyp.like).lambda_s + ", " + ((InDelLikelihood) hpyp.like).lambda_d);
 

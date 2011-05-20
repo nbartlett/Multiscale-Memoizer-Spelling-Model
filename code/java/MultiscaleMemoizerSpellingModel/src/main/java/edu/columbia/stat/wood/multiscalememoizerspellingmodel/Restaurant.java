@@ -165,7 +165,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
     }
 
     public void seat(Customer customer, Likelihood like) {
-
+        
         ArrayList<Pair<Table, Double>> logWeightsTables = new ArrayList<Pair<Table, Double>>();
         MutableDouble log_tw = new MutableDouble(Double.NEGATIVE_INFINITY);
         double d = discount.doubleValue();
@@ -223,13 +223,29 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                 return;
             }
         }
-
+        
+        /*assert (cuSum - .00001 < 0) && (cuSum + .00001 > 0) && ret == true;
+        
+        if (ret) 
+            return;*/
+              
         System.out.println("cuSum = " + cuSum);
         System.out.println("log_tw = " + log_tw);
         System.out.println("log _r = " + log_r);
         throw new RuntimeException("Should never get down to here");
     }
-
+    
+    public int differentFromParameter() {
+        int diff = 0;
+        for (Table table : tables) {
+            for (Table child : table.tables) {
+                if (!child.parameter.equals(table.parameter))
+                    diff++;
+            }
+        }
+        return diff;
+    }
+    
     public void parentParamsAndWeights(Customer customer, Likelihood like, ArrayList<Pair<Word,Double>> logWeightsParams, MutableDouble log_tw, double log_scalar, int m, Table emptyTable){
         double d = discount.doubleValue();
         double c = concentration.doubleValue();
@@ -287,7 +303,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
     }*/
 
     public void sample(Likelihood like, boolean onlyDatum) {
-        
+
         HashSet<Table> copyTables = (HashSet<Table>) tables.clone();
         for (Table table : copyTables) {
             if (!onlyDatum) {
@@ -307,17 +323,15 @@ public class Restaurant extends HashMap<Word, Restaurant> {
                 int cnt = entry.getValue().intValue();
                 Datum datum = entry.getKey();
                 for (int i = 0; i < cnt; i++) {
-                    if (table.data.get(datum).intValue() == 1) {
+                    if (table.data.get(datum).intValue() == 1)
                         table.data.remove(datum);
-                    } else {
+                    else
                         entry.getValue().decrement();
-                    }
                     
                     customers--;
                     
-                    if (table.size() == 0) {
+                    if (table.size() == 0) 
                         parent.unseat(table, table.parent);
-                    }
 
                     seat(entry.getKey(), like);
                 }
