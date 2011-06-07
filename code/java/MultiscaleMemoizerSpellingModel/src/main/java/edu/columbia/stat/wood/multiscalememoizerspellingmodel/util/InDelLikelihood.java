@@ -5,13 +5,8 @@
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.HPYP;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.Random;
 
 /**
@@ -38,7 +33,6 @@ public class InDelLikelihood implements Likelihood {
         this.alphabetSize = alphabetSize;
     }
 
-    @Override
     public void sample(HPYP hpyp) {
         double std = 0.07;
         int numberProposals = 5;
@@ -112,7 +106,6 @@ public class InDelLikelihood implements Likelihood {
     }
     private double[][][] probs = new double[100][100][25];
 
-    @Override
     public double logProb(int[] reference, int[] read) {
 
         key._1 = reference;
@@ -152,10 +145,10 @@ public class InDelLikelihood implements Likelihood {
 
                             double p = 0d;
                             if (s_a) {
-                                p += lambda_s / (double) alphabetSize * probs[refConsumed - 1][readConsumed - 1][edits - 1];
+                                p += lambda_s / alphabetSize * probs[refConsumed - 1][readConsumed - 1][edits - 1];
                             }
                             if (i_a) {
-                                p += lambda_i / (double) alphabetSize * probs[refConsumed][readConsumed - 1][edits - 1];
+                                p += lambda_i / alphabetSize * probs[refConsumed][readConsumed - 1][edits - 1];
 
                             }
                             if (d_a) {

@@ -60,7 +60,6 @@ public class HPYP implements Distribution<int[]>{
         ecr = new Restaurant(root, this.concentrations[0], this.discounts[0]);
     }
 
-    @Override
     public double logProbability(int[] word) {
         double logProb = 0d;
 
@@ -75,7 +74,6 @@ public class HPYP implements Distribution<int[]>{
         return logProb;
     }
 
-    @Override
     public int[] generate() {
         int maxWordLength = 1000;
 
@@ -108,7 +106,6 @@ public class HPYP implements Distribution<int[]>{
         return sample;
     }
 
-    @Override
     public void incrementObservationCount(int[] word) {
         int[] context;
         for (int i = 0; i < word.length; i++) {
@@ -119,7 +116,6 @@ public class HPYP implements Distribution<int[]>{
         get(word).seat(-1, Util.rng);
     }
 
-    @Override
     public void decrementObservationCount(int[] word) {
         int[] context;
         for (int i = 0; i < word.length; i++) {
@@ -130,7 +126,6 @@ public class HPYP implements Distribution<int[]>{
         get(word).unseat(-1,Util.rng);
     }
 
-    @Override
     public void sample() {
         sampleSeatingArrangements();
         sampleHyperParams(0.07, 0.7);
@@ -206,7 +201,6 @@ public class HPYP implements Distribution<int[]>{
         return score + root.score();
     }
 
-    @Override
     public double score() {
         return score(ecr) + root.score();
     }

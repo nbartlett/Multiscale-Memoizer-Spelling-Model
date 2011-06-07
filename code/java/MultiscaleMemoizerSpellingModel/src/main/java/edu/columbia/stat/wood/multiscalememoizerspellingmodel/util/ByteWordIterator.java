@@ -28,12 +28,10 @@ public class ByteWordIterator implements Iterator<int[]> {
         nextByte = bis.read();
     }
     
-    @Override
     public boolean hasNext() {
         return nextByte > -1;
     }
 
-    @Override
     public int[] next() {
         int[] next = new int[8];
         for (int i = 7; i > -1; i--) {
@@ -52,7 +50,6 @@ public class ByteWordIterator implements Iterator<int[]> {
         return next;
     }
 
-    @Override
     public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
     }

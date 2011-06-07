@@ -4,14 +4,11 @@
  */
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel.util;
 
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.Scanner;
 
@@ -49,29 +46,26 @@ public class FileWordIterator implements Iterator<int[]> {
         byte[] byteWord = lowCaseWord.getBytes();
         int[] word = new int[byteWord.length];
         for (int i = 0; i < word.length; i++) {
-            word[i] = (int) byteWord[i] - 97;
+            word[i] = byteWord[i] - 97;
         }
         return word;
     }
 
-    @Override
     public boolean hasNext() {
         return next != null;
     }
 
-    @Override
     public int[] next() {
         int[] n = next;
         update();
         return n;
     }
 
-    @Override
-    public void remove() {
+        public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public void close() throws IOException {
+    public void close() {
         if (scanner != null) {
             scanner.close();
         }

@@ -6,10 +6,8 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.experiments;
 
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.HPYP;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.ByteInDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.ByteWordIterator;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Distribution;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -74,7 +72,6 @@ public class ByteWordExperiment {
 
         private int[] counts = new int[256];
 
-        @Override
         public double logProbability(int[] type) {
             for (int i : type) {
                 if (i != 0 && i != 1) {
@@ -84,7 +81,6 @@ public class ByteWordExperiment {
             return -Math.log(256d);
         }
 
-        @Override
         public int[] generate() {
             int b = (int) (256 * Util.rng.nextDouble());
 
@@ -98,7 +94,6 @@ public class ByteWordExperiment {
             return sample;
         }
 
-        @Override
         public void incrementObservationCount(int[] observation) {
             int value = 0;
             int power = 1;
@@ -113,7 +108,6 @@ public class ByteWordExperiment {
             counts[value]++;
         }
 
-        @Override
         public void decrementObservationCount(int[] observation) {
             int value = 0;
             int power = 1;
@@ -128,16 +122,14 @@ public class ByteWordExperiment {
             counts[value]--;
         }
 
-        @Override
         public double score() {
             double score = 0d;
             for (int i : counts) {
-                score -= (double) i * Math.log(256d);
+                score -= i * Math.log(256d);
             }
             return score;
         }
 
-        @Override
         public void sample() {
         }
     }
