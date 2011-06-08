@@ -10,7 +10,6 @@ import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Pair;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.HashSet;
@@ -58,32 +57,25 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             if (tables == null) {
                 tables = new HashSet<Table>();
             }
-
-            Table newTable = new Table();
-            newTable.parameter = childTable.parameter;
-            newTable.tables.add(childTable);
-            childTable.parent = newTable;
-            tables.add(newTable);
-            parent.seatWithParameter(newTable);
         } else {
             ArrayList<Table> candidateList = new ArrayList<Table>();
-            double tw = 0d;
+            double tw = 0;
             double d = discount.doubleValue();
             double c = concentration.doubleValue();
 
             for (Table t : tables) {
                 if (t.parameter.equals(childTable.parameter)) {
                     candidateList.add(t);
-                    tw += (double) t.size() - d;
+                    tw += t.size() - d;
                 }
             }
-            tw += (d * (double) tables.size() + c) * parent.parameterProb(childTable.parameter);
+            tw += (d * tables.size() + c) * parent.parameterProb(childTable.parameter);
 
-            double cuSum = 0d;
+            double cuSum = 0;
             double r = Util.rng.nextDouble();
 
             for (Table t : candidateList) {
-                cuSum += ((double) t.size() - d) / tw;
+                cuSum += (t.size() - d) / tw;
                 if (cuSum > r) {
                     t.tables.add(childTable);
                     childTable.parent = t;
@@ -92,29 +84,28 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             }
 
             assert r >= cuSum;
-
-            Table newTable = new Table();
-            newTable.parameter = childTable.parameter;
-            newTable.tables.add(childTable);
-            childTable.parent = newTable;
-            tables.add(newTable);
-            parent.seatWithParameter(newTable);
         }
+        Table newTable = new Table();
+        newTable.parameter = childTable.parameter;
+        newTable.tables.add(childTable);
+        childTable.parent = newTable;
+        tables.add(newTable);
+        parent.seatWithParameter(newTable);
     }
     
     public double parameterProb(Word parameter) {
-        double prob = 0d;
+        double prob = 0;
         
         double c = concentration.doubleValue();
         double d = discount.doubleValue();
         
-        double denom = (double) customers + c;
+        double denom = customers + c;
         
         for (Table table : tables) {
-            if (table.parameter.equals(parameter)) prob += ((double) table.size() - d) / denom;
+            if (table.parameter.equals(parameter)) prob += (table.size() - d) / denom;
         }
         
-        return prob + (d * (double) tables.size() + c) * parent.parameterProb(parameter) / denom;
+        return prob + (d * tables.size() + c) * parent.parameterProb(parameter) / denom;
     }
 
     public void initSeatDatum(Datum datum) {
@@ -123,31 +114,25 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             if (tables == null) {
                 tables = new HashSet<Table>();
             }
-
-            Table newTable = new Table();
-            newTable.parameter = datum.word;
-            newTable.seat(datum);
-            tables.add(newTable);
-            parent.seatWithParameter(newTable);
         } else {
             ArrayList<Table> candidateList = new ArrayList<Table>();
-            double tw = 0d;
+            double tw = 0;
             double d = discount.doubleValue();
             double c = concentration.doubleValue();
 
             for (Table t : tables) {
                 if (t.parameter.equals(datum.word)) {
                     candidateList.add(t);
-                    tw += (double) t.size() - d;
+                    tw += t.size() - d;
                 }
             }
-            tw += (d * (double) tables.size() + c) * parent.parameterProb(datum.word);
+            tw += (d * tables.size() + c) * parent.parameterProb(datum.word);
 
             double cuSum = 0d;
             double r = Util.rng.nextDouble();
 
             for (Table t : candidateList) {
-                cuSum += ((double) t.size() - d) / tw;
+                cuSum += (t.size() - d) / tw;
                 if (cuSum > r) {
                     t.seat(datum);
                     return;
@@ -155,13 +140,13 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             }
             
             assert r >= cuSum;
-
-            Table newTable = new Table();
-            newTable.parameter = datum.word;
-            newTable.seat(datum);
-            tables.add(newTable);
-            parent.seatWithParameter(newTable);
         }
+
+        Table newTable = new Table();
+        newTable.parameter = datum.word;
+        newTable.seat(datum);
+        tables.add(newTable);
+        parent.seatWithParameter(newTable);
     }
 
     public void seat(Customer customer, Likelihood like) {
@@ -173,12 +158,12 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         Table emptyTable = null;
 
         double log_w;
-        double log_denom = Math.log((double) customers + c);
+        double log_denom = Math.log(customers + c);
         for (Table table : tables) {
             if (table.size() > 0) {
-                log_w = Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like);
+                log_w = Math.log(table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like);
                 log_tw.addLogs(log_w);
-                logWeightsTables.add(new Pair(table, log_w));
+                logWeightsTables.add(new Pair<Table, Double>(table, log_w));
             } else {
                 if (emptyTable != null) {
                     throw new RuntimeException("should only be one empty table at most");
@@ -192,7 +177,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         }
 
         ArrayList<Pair<Word, Double>> logWeightsParams = new ArrayList<Pair<Word, Double>>();
-        double logProbPrior = Math.log(d * (double) tables.size() + c) - log_denom;
+        double logProbPrior = Math.log(d * tables.size() + c) - log_denom;
         parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, logProbPrior, m, emptyTable);
 
         assert log_tw.doubleValue() > Double.NEGATIVE_INFINITY;
@@ -251,14 +236,14 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         double c = concentration.doubleValue();
         
         double log_w;
-        double log_denom = Math.log((double) customers + c);
+        double log_denom = Math.log(customers + c);
         for (Table table : tables) {
-            log_w = log_scalar + Math.log((double) table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like);
-            logWeightsParams.add(new Pair(table.parameter, log_w));
+            log_w = log_scalar + Math.log(table.size() - d) - log_denom + customer.logLikelihood(table.parameter, like);
+            logWeightsParams.add(new Pair<Word, Double>(table.parameter, log_w));
             log_tw.addLogs(log_w);
         }
 
-        parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, log_scalar + Math.log(d * (double) tables.size() + c) - log_denom, m, emptyTable);
+        parent.parentParamsAndWeights(customer, like, logWeightsParams, log_tw, log_scalar + Math.log(d * tables.size() + c) - log_denom, m, emptyTable);
     }
 
     public void unseat(Table childTable, Table table) {
@@ -273,7 +258,7 @@ public class Restaurant extends HashMap<Word, Restaurant> {
     /*
     public ArrayList<Word> generateParameters(int n) {
         ArrayList<Word> sample = new ArrayList<Word>(n);
-        generateParameters(sample, Util.rng.nextDouble() / (double) n, n);
+        generateParameters(sample, Util.rng.nextDouble() / n, n);
         return sample;
     }
 
@@ -281,10 +266,10 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         double cuSum = 0d;
         double d = discount.doubleValue();
         double c = concentration.doubleValue();
-        double constant = 1d / (double) n;
+        double constant = 1d / n;
 
         for (Table table : tables) {
-            cuSum += ((double) table.size() - d) / ((double) customers + c);
+            cuSum += (table.size() - d) / (customers + c);
 
             assert cuSum < 1d;
 
@@ -296,8 +281,8 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         }
 
         if (n > 0) {
-            double probThis = ((double) customers - d * (double) tables.size()) / ((double) customers + c);
-            double probParent = (d * (double) tables.size() + c) / ((double) customers + c);
+            double probThis = (customers - d * tables.size()) / (customers + c);
+            double probParent = (d * tables.size() + c) / (customers + c);
             parent.generateParameters(sample, (r - probThis) / probParent, n);
         }
     }*/
@@ -344,15 +329,15 @@ public class Restaurant extends HashMap<Word, Restaurant> {
         double d = discount.doubleValue();
         double c = concentration.doubleValue();
 
-        double log_denom = Math.log((double) customers + c);
+        double log_denom = Math.log(customers + c);
         for (Table table : tables) {
-            lw = log_scalar + Math.log((double) table.size() - d) - log_denom + like.logProb(table.parameter.value, read);
+            lw = log_scalar + Math.log(table.size() - d) - log_denom + like.logProb(table.parameter.value, read);
             logProbability.addLogs(lw);
         }
 
         assert logProbability.doubleValue() < 0d;
 
-        parent.logProbability(logProbability, read, like, Math.log(d * (double) tables.size() + c) - log_denom + log_scalar);
+        parent.logProbability(logProbability, read, like, Math.log(d * tables.size() + c) - log_denom + log_scalar);
     }
 
     public double score(Likelihood like) {
@@ -367,24 +352,24 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             int cust = 0;
             for (int t = 0; t < table.tables.size(); t++) {
                 if (tbls == 0 && cust == 0); else if (cust == 0) {
-                    score += Math.log(d * (double) tbls + c);
+                    score += Math.log(d * tbls + c);
                 } else {
-                    score += Math.log((double) cust - d);
+                    score += Math.log(cust - d);
                 }
-                score -= Math.log((double) custs + c);
+                score -= Math.log(custs + c);
                 cust++;
                 custs++;
             }
 
             for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
                 if (tbls == 0 && cust == 0); else if (cust == 0) {
-                    score += Math.log(d * (double) tbls + c);
+                    score += Math.log(d * tbls + c);
                 } else {
-                    score += Math.log((double) cust - d);
+                    score += Math.log(cust - d);
                 }
-                score -= Math.log((double) custs + c);
+                score -= Math.log(custs + c);
                 
-                score += entry.getKey().logLikelihood(table.parameter, like) * (double) entry.getValue().intValue();
+                score += entry.getKey().logLikelihood(table.parameter, like) * entry.getValue().intValue();
                 cust++;
                 custs++;
             }
@@ -410,24 +395,24 @@ public class Restaurant extends HashMap<Word, Restaurant> {
             int cust = 0;
             for (int t = 0; t < table.tables.size(); t++) {
                 if (tbls == 0 && cust == 0); else if (cust == 0) {
-                    score += Math.log(d * (double) tbls + c);
+                    score += Math.log(d * tbls + c);
                 } else {
-                    score += Math.log((double) cust - d);
+                    score += Math.log(cust - d);
                 }
-                score -= Math.log((double) custs + c);
+                score -= Math.log(custs + c);
                 cust++;
                 custs++;
             }
 
             for (Entry<Datum, MutableInt> entry : table.data.entrySet()) {
                 if (tbls == 0 && cust == 0); else if (cust == 0) {
-                    score += Math.log(d * (double) tbls + c);
+                    score += Math.log(d * tbls + c);
                 } else {
-                    score += Math.log((double) cust - d);
+                    score += Math.log(cust - d);
                 }
-                score -= Math.log((double) custs + c);
+                score -= Math.log(custs + c);
                 
-                score += entry.getKey().logLikelihood(table.parameter, like) * (double) entry.getValue().intValue();
+                score += entry.getKey().logLikelihood(table.parameter, like) * entry.getValue().intValue();
                 cust++;
                 custs++;
             }

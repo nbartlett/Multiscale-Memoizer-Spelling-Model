@@ -15,7 +15,8 @@ import java.util.Random;
  */
 public class InDelLikelihood implements Likelihood {
 
-    public static int maxSizeLookup = 1000000;
+	private static final int MAX_WORD_LENGTH = 100;
+    public static final int MAX_SIZE_LOOKUP = 1000000;
     private Key key = new Key();
     private KeySum keySum = new KeySum();
     private HashMap<Key, Double> logProbLookup = new HashMap<Key, Double>(2000000);
@@ -26,11 +27,15 @@ public class InDelLikelihood implements Likelihood {
     public double lambda_s = 0.2;
     private int maxEdits;
     private Random rng;
+    private double[][][] probs;
+    private double[][] probSum;
 
     public InDelLikelihood(int maxEdits, int alphabetSize, Random rng) {
         this.maxEdits = maxEdits;
         this.rng = rng;
         this.alphabetSize = alphabetSize;
+        probs = new double[MAX_WORD_LENGTH][MAX_WORD_LENGTH][maxEdits+1];
+        probSum = new double[MAX_WORD_LENGTH][maxEdits+1];
     }
 
     public void sample(HPYP hpyp) {
@@ -104,7 +109,7 @@ public class InDelLikelihood implements Likelihood {
     public int lookupSize() {
         return logProbLookup.size();
     }
-    private double[][][] probs = new double[100][100][25];
+    
 
     public double logProb(int[] reference, int[] read) {
 
@@ -113,7 +118,7 @@ public class InDelLikelihood implements Likelihood {
         Double value = logProbLookup.get(key);
 
         if (value == null) {
-            if (logProbLookup.size() > maxSizeLookup) {
+            if (logProbLookup.size() > MAX_SIZE_LOOKUP) {
                 cleanLogProb();
             }
 
@@ -129,7 +134,7 @@ public class InDelLikelihood implements Likelihood {
                 for (int readConsumed = minReadIndex; readConsumed <= maxReadIndex; readConsumed++) {
                     for (int edits = 0; edits <= maxEdits; edits++) {
                         if (refConsumed == 0 && readConsumed == 0 && edits == 0) {
-                            probs[0][0][0] = 1d;
+                            probs[0][0][0] = 1;
                         } else {
                             boolean i_a, d_a, s_a, m_a;
                             if (edits > 0) {
@@ -143,13 +148,12 @@ public class InDelLikelihood implements Likelihood {
                             }
                             m_a = readConsumed > 0 && refConsumed > 0 && reference[refConsumed - 1] == read[readConsumed - 1];
 
-                            double p = 0d;
+                            double p = 0;
                             if (s_a) {
                                 p += lambda_s / alphabetSize * probs[refConsumed - 1][readConsumed - 1][edits - 1];
                             }
                             if (i_a) {
                                 p += lambda_i / alphabetSize * probs[refConsumed][readConsumed - 1][edits - 1];
-
                             }
                             if (d_a) {
                                 p += lambda_d * probs[refConsumed - 1][readConsumed][edits - 1];
@@ -164,7 +168,7 @@ public class InDelLikelihood implements Likelihood {
                 }
             }
 
-            double p = 0d;
+            double p = 0;
             for (int edits = 0; edits <= maxEdits; edits++) {
                 p += probs[reference.length][read.length][edits];
             }
@@ -175,7 +179,6 @@ public class InDelLikelihood implements Likelihood {
         return value;
 
     }
-    private double[][] probSum = new double[100][25];
 
     public double probSum(int[] reference) {
 
@@ -184,7 +187,7 @@ public class InDelLikelihood implements Likelihood {
 
         if (value == null) {
 
-            if (probSumLookup.size() > maxSizeLookup) {
+            if (probSumLookup.size() > MAX_SIZE_LOOKUP) {
                 cleanProbSum();
             }
 
@@ -193,9 +196,9 @@ public class InDelLikelihood implements Likelihood {
 
             for (int refConsumed = 0; refConsumed <= reference.length; refConsumed++) {
                 for (int edits = 0; edits <= maxEdits; edits++) {
-                    double p = 0d;
+                    double p = 0;
                     if (refConsumed == 0 && edits == 0) {
-                        p = 1d;
+                        p = 1;
                     } else {
                         if (refConsumed > 0) {
                             p += probSum[refConsumed - 1][edits];
@@ -211,7 +214,7 @@ public class InDelLikelihood implements Likelihood {
                 }
             }
 
-            double p = 0d;
+            double p = 0;
             for (int edits = 0; edits <= maxEdits; edits++) {
                 p += probSum[reference.length][edits];
             }
@@ -228,7 +231,7 @@ public class InDelLikelihood implements Likelihood {
         Collections.sort(list, new Comp());
         
         int size = logProbLookup.size();
-        int targetSize = maxSizeLookup / 2;
+        int targetSize = MAX_SIZE_LOOKUP / 2;
         Iterator<Entry<Key, DoubleTouchesPair>> iterator = list.iterator();
         while (size-- > targetSize) {
         logProbLookup.remove(iterator.next().getKey());
@@ -245,7 +248,7 @@ public class InDelLikelihood implements Likelihood {
         Collections.sort(list, new Comp());
         
         int size = probSumLookup.size();
-        int targetSize = maxSizeLookup / 2;
+        int targetSize = MAX_SIZE_LOOKUP / 2;
         Iterator<Entry<KeySum, DoubleTouchesPair>> iterator = list.iterator();
         while (size-- > targetSize) {
         probSumLookup.remove(iterator.next().getKey());
@@ -273,7 +276,7 @@ public class InDelLikelihood implements Likelihood {
         public boolean equals(Object o) {
             if (o == null) {
                 return false;
-            } else if (o.getClass() == getClass()) {
+            } else if (o instanceof Key) {
                 return Arrays.equals(((Key) o)._1, _1) && Arrays.equals(((Key) o)._2, _2);
             } else {
                 return false;
@@ -289,7 +292,7 @@ public class InDelLikelihood implements Likelihood {
         public boolean equals(Object o) {
             if (o == null) {
                 return false;
-            } else if (o.getClass() == getClass()) {
+            } else if (o instanceof KeySum) {
                 return Arrays.equals(((KeySum) o).key, key);
             } else {
                 return false;
@@ -351,7 +354,7 @@ public class InDelLikelihood implements Likelihood {
     
     if (logProb == null) {
     
-    if (logProbLookup.size() > maxSizeLookup) {
+    if (logProbLookup.size() > MAX_SIZE_LOOKUP) {
     cleanLogProb();
     }
     
@@ -433,7 +436,7 @@ public class InDelLikelihood implements Likelihood {
     DoubleTouchesPair logSum = logSumLookup.get(keySum);
     
     if (logSum == null) {
-    if (logSumLookup.size() > maxSizeLookup) {
+    if (logSumLookup.size() > MAX_SIZE_LOOKUP) {
     cleanLogSum();
     }
     

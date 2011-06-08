@@ -6,12 +6,9 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.experiments;
 
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.HPYP;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Distribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.FileWordIterator;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -78,13 +75,12 @@ public class SpellingErrorAIW {
                         context[j - 1] = context[j];
                     }
                     context[d - 1] = w;
+                } else if (i < test.length) {
+                	test[i++] = new Word(fwi.next());
                 } else {
-                    if (i < test.length) {
-                        test[i++] = new Word(fwi.next());
-                    } else {
-                        break;
-                    }
+                	break;
                 }
+
             }
 
             fwi.close();
@@ -124,7 +120,7 @@ public class SpellingErrorAIW {
             }*/
             hpyp.sample(false);
 
-            System.out.println(i + "," + (double) (System.currentTimeMillis() - start_time) / 1000 + ", " + hpyp.score() + ", " + hpyp.misspelledWords(trueWords) + ", " + ((InDelLikelihood) hpyp.like).lambda_i + ", " + ((InDelLikelihood) hpyp.like).lambda_s + ", " + ((InDelLikelihood) hpyp.like).lambda_d);
+            System.out.println(i + "," + (System.currentTimeMillis() - start_time) / 1000.0 + ", " + hpyp.score() + ", " + hpyp.misspelledWords(trueWords) + ", " + ((InDelLikelihood) hpyp.like).lambda_i + ", " + ((InDelLikelihood) hpyp.like).lambda_s + ", " + ((InDelLikelihood) hpyp.like).lambda_d);
 
             ps.print(hpyp.score() + ", ");
             hpyp.score(context, test, d, ps);

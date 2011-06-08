@@ -32,6 +32,13 @@ public class MutableDouble {
     public void timesEquals(double factor) {
         value *= factor;
     }
+    
+    public static MutableDouble[] toMutableArray(double[] doubles) {
+    	MutableDouble[] mdoubles = new MutableDouble[doubles.length];
+    	for (int i = 0; i < doubles.length; i++)
+    		mdoubles[i] = new MutableDouble(doubles[i]);
+    	return mdoubles;
+    }
 
     public void addLogs(double log_something) {
         if (Double.isInfinite(value) && Double.isInfinite(log_something)) {

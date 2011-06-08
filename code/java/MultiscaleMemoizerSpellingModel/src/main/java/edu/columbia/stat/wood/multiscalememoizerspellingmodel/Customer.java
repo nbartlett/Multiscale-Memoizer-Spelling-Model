@@ -11,8 +11,8 @@ import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
  *
  * @author nicholasbartlett
  */
-public abstract class Customer {
+public interface Customer {
     
-    public abstract double logLikelihood(Word parameter, Likelihood like);
+    public double logLikelihood(Word parameter, Likelihood like);
 
 }

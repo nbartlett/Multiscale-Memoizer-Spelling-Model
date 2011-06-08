@@ -28,6 +28,14 @@ public class MutableInt implements Comparable<MutableInt> {
     public void decrement() {
         value--;
     }
+    
+    public static MutableInt[] toMutableArray(int[] ints) {
+    	MutableInt[] mints = new MutableInt[ints.length];
+    	for (int i = 0; i < mints.length; i++)
+    		mints[i] = new MutableInt(ints[i]);
+    	return mints;
+    }
+
 
     public int intValue() {
         return value;

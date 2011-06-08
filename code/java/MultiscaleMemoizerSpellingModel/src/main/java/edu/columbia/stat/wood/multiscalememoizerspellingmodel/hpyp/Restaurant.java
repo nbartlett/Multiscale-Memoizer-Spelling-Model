@@ -41,12 +41,12 @@ public class Restaurant extends HashMap<Integer, Restaurant> {
         double cuSum = 0d;
         double r = rng.nextDouble();
         double d = discount.doubleValue();
-        double denom = (double) customers + concentration.doubleValue();
+        double denom = customers + concentration.doubleValue();
 
         TSA tsa;
         for (Entry<Integer, TSA> entry : tableArrangements.entrySet()) {
             tsa = entry.getValue();
-            cuSum += ((double) tsa.customers - d * (double) tsa.tables) / denom;
+            cuSum += (tsa.customers - d * tsa.tables) / denom;
             if (cuSum > r) {
                 return entry.getKey();
             }
@@ -62,14 +62,14 @@ public class Restaurant extends HashMap<Integer, Restaurant> {
             return pp;
         } else {
             TSA tsa = tableArrangements.get(type);
-            double tc = 0d, tt = 0d, d = discount.doubleValue(), c = concentration.doubleValue();
+            double tc = 0, tt = 0, d = discount.doubleValue(), c = concentration.doubleValue();
 
             if (tsa != null) {
                 tc = tsa.customers;
                 tt = tsa.tables;
             }
 
-            return (tc - d * tt + pp * (d * (double) tables + c)) / ((double) customers + c);
+            return (tc - d * tt + pp * (d * tables + c)) / (customers + c);
         }
     }
 
@@ -140,18 +140,18 @@ public class Restaurant extends HashMap<Integer, Restaurant> {
     }
 
     public double score() {
-        double score = 0.0, d = discount.doubleValue(), c = concentration.doubleValue();
+        double score = 0, d = discount.doubleValue(), c = concentration.doubleValue();
 
         for (TSA tsa : tableArrangements.values()) {
             score += tsa.score(d);
         }
 
         for (int table = 1; table < tables; table++) {
-            score += Math.log((double) table * d + c);
+            score += Math.log(table * d + c);
         }
 
         for (int customer = 1; customer < customers; customer++) {
-            score -= Math.log((double) customer + c);
+            score -= Math.log(customer + c);
         }
 
         return score;
@@ -239,6 +239,6 @@ public class Restaurant extends HashMap<Integer, Restaurant> {
         }
 
         assert index == customersToSample : "index = " + index + " : customers to sample = " + customersToSample;
-        return new Pair(types, tables);
+        return new Pair<int[], int[]>(types, tables);
     }
 }

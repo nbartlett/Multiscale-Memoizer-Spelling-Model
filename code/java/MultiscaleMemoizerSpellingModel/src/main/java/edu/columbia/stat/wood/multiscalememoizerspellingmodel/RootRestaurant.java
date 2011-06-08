@@ -15,6 +15,7 @@ import java.util.ArrayList;
  *
  * @author nicholasbartlett
  */
+@SuppressWarnings("serial")
 public class RootRestaurant extends Restaurant {
 
     public Distribution<int[]> baseDistribution;
@@ -92,13 +93,13 @@ public class RootRestaurant extends Restaurant {
         if (emptyTable != null) {
             m -= 1;
             log_w = log_scalar + customer.logLikelihood(emptyTable.parameter, like);
-            logWeightsParams.add(new Pair(emptyTable.parameter, log_w));
+            logWeightsParams.add(new Pair<Word, Double>(emptyTable.parameter, log_w));
             log_tw.addLogs(log_w);
         }
         
         for (int i = 0; i < m; i++) {
             log_w = log_scalar + customer.logLikelihood(word = new Word(baseDistribution.generate()), like);
-            logWeightsParams.add(new Pair(word, log_w));
+            logWeightsParams.add(new Pair<Word, Double>(word, log_w));
             log_tw.addLogs(log_w);
         }
     }

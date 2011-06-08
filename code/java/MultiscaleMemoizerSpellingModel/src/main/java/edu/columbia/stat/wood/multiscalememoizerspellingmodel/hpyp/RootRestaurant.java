@@ -15,6 +15,7 @@ import java.util.Random;
  *
  * @author nicholasbartlett
  */
+@SuppressWarnings("serial")
 public class RootRestaurant extends Restaurant {
 
     public Distribution<Integer> baseDistribution;
@@ -70,7 +71,7 @@ public class RootRestaurant extends Restaurant {
     public double score(){
         double score = 0.0;
         for (Entry<Integer, MutableInt> entry : customerCount.entrySet()) {
-            score += (double) entry.getValue().intValue() * baseDistribution.logProbability(entry.getKey());
+            score += entry.getValue().intValue() * baseDistribution.logProbability(entry.getKey());
         }
         return score;
     }

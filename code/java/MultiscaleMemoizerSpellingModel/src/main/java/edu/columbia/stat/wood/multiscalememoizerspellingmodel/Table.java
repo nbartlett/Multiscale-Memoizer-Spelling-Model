@@ -4,9 +4,7 @@
  */
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,7 +14,7 @@ import java.util.Map.Entry;
  *
  * @author nicholasbartlett
  */
-public class Table extends Customer {
+public class Table implements Customer {
 
     public Table parent;
     public Word parameter;
@@ -37,7 +35,7 @@ public class Table extends Customer {
     }
 
     public void seat(Customer customer) {
-        if (customer.getClass() == getClass()) {
+    	if (customer instanceof Table) {
             Table table = (Table) customer;
             table.parent = this;
             tables.add(table);
@@ -53,16 +51,15 @@ public class Table extends Customer {
         }
     }
 
-    @Override
     public double logLikelihood(Word parameter, Likelihood like) {
-        double logLike = 0d;
+        double logLike = 0;
         
         for (Table table : tables) {
             logLike += table.logLikelihood(parameter, like);
         }
 
         for (Entry<Datum, MutableInt> entry : data.entrySet()) {
-            logLike += entry.getKey().logLikelihood(parameter, like) * (double) entry.getValue().intValue();
+            logLike += entry.getKey().logLikelihood(parameter, like) * entry.getValue().intValue();
         }
 
         return logLike;

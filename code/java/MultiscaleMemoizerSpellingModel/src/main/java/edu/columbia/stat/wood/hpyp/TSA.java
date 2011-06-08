@@ -28,7 +28,7 @@ public class TSA {
             tables = 1;
             return true;
         } else {
-            double tw = (double) customers - discount * (double) tables + pp * (discount * (double) totalTables + concentration);
+            double tw = customers - discount * tables + pp * (discount * totalTables + concentration);
             double r = rng.nextDouble();
             double cuSum = 0.0;
             int zeroIndex = -1;
@@ -37,7 +37,7 @@ public class TSA {
                 if (sa[table] == 0) {
                     zeroIndex = table;
                 } else {
-                    cuSum += ((double) sa[table] - discount) / tw;
+                    cuSum += (sa[table] - discount) / tw;
                     if (cuSum > r) {
                         sa[table]++;
                         customers++;
@@ -130,7 +130,7 @@ public class TSA {
         for (int table : sa) {
             if (table > 0) {
                 for (int customer = 1; customer < table; customer++) {
-                    score += Math.log((double) customer - discount);
+                    score += Math.log(customer - discount);
                 }
             }
         }

@@ -9,18 +9,12 @@ import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.FileWordItera
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableDouble;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.MutableInt;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Util;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 
 /**
@@ -36,18 +30,8 @@ public class HPYP {
     public Likelihood like;
 
     public HPYP(Distribution<int[]> baseDistribution) {
-        MutableDouble c0 = new MutableDouble(20);
-        MutableDouble c1 = new MutableDouble(10);
-        MutableDouble c2 = new MutableDouble(10);
-        MutableDouble c3 = new MutableDouble(10);
-
-        MutableDouble d0 = new MutableDouble(.1);
-        MutableDouble d1 = new MutableDouble(.3);
-        MutableDouble d2 = new MutableDouble(.7);
-        MutableDouble d3 = new MutableDouble(.9);
-
-        concentrations = new MutableDouble[]{c0, c1, c2, c3};
-        discounts = new MutableDouble[]{d0, d1, d2, d3};
+        concentrations = MutableDouble.toMutableArray(new double[]{20, 10, 10, 10});
+        discounts = MutableDouble.toMutableArray(new double[]{.1, .3, .7, .9});
 
         root = new RootRestaurant(baseDistribution);
         ecr = new Restaurant(root, concentrations[0], discounts[0]);
@@ -141,24 +125,19 @@ public class HPYP {
         return score + root.score(like);
     }
 
-    public void score(Word[] context, Word[] testSequence, int depth, PrintStream ps) throws Exception {
-        Word[] cxt = new Word[depth];
-        System.arraycopy(context, 0, cxt, 0, depth < context.length ? depth : context.length);
+    public void score(Word[] context, Word[] testSequence, int depth, PrintStream ps)  {
+    	Word[] cxt = new Word[depth];
+    	System.arraycopy(context, 0, cxt, 0, depth < context.length ? depth : context.length);
+    	for (Word testWord : testSequence) {
+    		ps.print(Math.exp(logProbability(cxt, testWord)));
+    		ps.print(", ");
 
-        try {
-            for (Word testWord : testSequence) {
-                ps.print(Math.exp(logProbability(cxt, testWord)));
-                ps.print(", ");
+    		for (int i = 1; i < depth; i++) {
+    			cxt[i - 1] = cxt[i];
+    		}
+    		cxt[depth - 1] = testWord;
+    	}
 
-                for (int i = 1; i < depth; i++) {
-                    cxt[i - 1] = cxt[i];
-                }
-                cxt[depth - 1] = testWord;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
     }
     
     public double misspelledWords(HashSet<Word> lookup) {
@@ -204,7 +183,7 @@ public class HPYP {
         for (Restaurant c : r.values()) {
             sample(c, onlyDatum);
         }
-        r.sample(like,onlyDatum);
+        r.sample(like, onlyDatum);
     }
 
     private double score(Restaurant r) {

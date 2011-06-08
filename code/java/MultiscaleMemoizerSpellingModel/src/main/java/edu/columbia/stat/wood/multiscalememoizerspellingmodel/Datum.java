@@ -5,14 +5,13 @@
 
 package edu.columbia.stat.wood.multiscalememoizerspellingmodel;
 
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.InDelLikelihood;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Likelihood;
 
 /**
  *
  * @author nicholasbartlett
  */
-public class Datum extends Customer {
+public class Datum implements Customer {
 
     public Word word;
 
@@ -20,7 +19,6 @@ public class Datum extends Customer {
         word = value;
     }
 
-    @Override
     public double logLikelihood(Word parameter, Likelihood like) {
         return like.logProb(parameter.value, word.value);
     }

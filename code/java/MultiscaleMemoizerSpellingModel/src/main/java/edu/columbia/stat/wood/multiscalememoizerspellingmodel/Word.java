@@ -26,16 +26,14 @@ public class Word {
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 11 * hash + Arrays.hashCode(this.value);
-        return hash;
+    	return Arrays.hashCode(value);
     }
     
     public void corrupt() {
         if (value.length > 1) {
             if (Util.rng.nextDouble() < 0.1) {
                 int[] newValue = new int[value.length - 1];
-                int remove = (int) Util.rng.nextDouble() * value.length;
+                int remove = (int) (Util.rng.nextDouble() * value.length);
                 System.arraycopy(value,0,newValue,0,remove);
                 System.arraycopy(value,remove+1, newValue,remove, value.length - 1 - remove);
                 value = newValue;
@@ -52,7 +50,7 @@ public class Word {
             value = newValue;
             return;
         } else {
-            value[(int) Util.rng.nextDouble() * value.length] = (int) (Util.rng.nextDouble() * 26d);   
+            value[(int) (Util.rng.nextDouble() * value.length)] = (int) (Util.rng.nextDouble() * 26d);   
         }
     }
 

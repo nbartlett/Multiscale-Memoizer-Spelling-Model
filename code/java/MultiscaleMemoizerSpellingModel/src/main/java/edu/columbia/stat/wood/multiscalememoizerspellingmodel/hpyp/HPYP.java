@@ -28,26 +28,8 @@ public class HPYP implements Distribution<int[]>{
     private MutableDouble[] concentrations;
 
     public HPYP(Distribution<Integer> baseDistribution) {
-        MutableDouble d0 = new MutableDouble(.1);
-        MutableDouble d1 = new MutableDouble(.3);
-        MutableDouble d2 = new MutableDouble(.5);
-        MutableDouble d3 = new MutableDouble(.6);
-        MutableDouble d4 = new MutableDouble(.7);
-        MutableDouble d5 = new MutableDouble(.8);
-        MutableDouble d6 = new MutableDouble(.9);
-        MutableDouble d7 = new MutableDouble(.9);
-
-        MutableDouble c0 = new MutableDouble(20);
-        MutableDouble c1 = new MutableDouble(10);
-        MutableDouble c2 = new MutableDouble(5);
-        MutableDouble c3 = new MutableDouble(1);
-        MutableDouble c4 = new MutableDouble(1);
-        MutableDouble c5 = new MutableDouble(1);
-        MutableDouble c6 = new MutableDouble(1);
-        MutableDouble c7 = new MutableDouble(1);
-
-        discounts = new MutableDouble[]{d0,d1,d2,d3,d4,d5,d6,d7};
-        concentrations = new MutableDouble[]{c0,c1,c2,c3,c4,c5,c6,c7};
+        concentrations = MutableDouble.toMutableArray(new double[]{20, 10, 5, 1, 1, 1, 1, 1});
+        discounts = MutableDouble.toMutableArray(new double[]{.1, .3, .5, .6, .7, .8, .9, .9});
 
         root = new RootRestaurant(baseDistribution);
         ecr = new Restaurant(root, this.concentrations[0], this.discounts[0]);
@@ -250,19 +232,11 @@ public class HPYP implements Distribution<int[]>{
     }
     
     private MutableDouble getDiscount(int depth) {
-        if (depth < discounts.length) {
-            return discounts[depth];
-        } else {
-            return discounts[discounts.length - 1];
-        }
+    	return discounts[depth < discounts.length ? depth : discounts.length - 1];
     }
 
     private MutableDouble getConcentration(int depth) {
-        if (depth < concentrations.length) {
-            return concentrations[depth];
-        } else {
-            return concentrations[concentrations.length - 1];
-        }
+    	return concentrations[depth < concentrations.length ? depth : concentrations.length - 1];
     }
 
     public double prob(int[] context, int w) {

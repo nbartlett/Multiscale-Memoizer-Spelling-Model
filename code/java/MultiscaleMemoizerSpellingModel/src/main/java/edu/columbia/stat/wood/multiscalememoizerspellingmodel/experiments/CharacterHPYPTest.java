@@ -6,7 +6,6 @@ package edu.columbia.stat.wood.multiscalememoizerspellingmodel.experiments;
 
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.Word;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.hpyp.HPYP;
-import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.Distribution;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.FileWordIterator;
 import edu.columbia.stat.wood.multiscalememoizerspellingmodel.util.UniformIntegerDistribution;
 import java.io.File;
@@ -25,6 +24,7 @@ public class CharacterHPYPTest {
     public static HashMap<Word, Integer> dictionary = new HashMap<Word, Integer>();
     public static HashMap<Integer, Word> r_dictionary = new HashMap<Integer, Word>();
 
+    // usage: depth corrupted_file out_file [original_file]
     public static void main(String[] args) throws FileNotFoundException, IOException {
         FileWordIterator fwi = null;
         FileWordIterator fwi_aiw = null;
@@ -36,9 +36,7 @@ public class CharacterHPYPTest {
         
         int depth = Integer.parseInt(args[0]);
         
-        File aiw = null;
-        if (args.length == 3)
-            aiw = new File(args[3]);
+        File aiw = args.length > 3 ? new File(args[3]) : null;
 
         try {
             //fwi = new FileWordIterator(new File("/Users/nicholasbartlett/Documents/np_bayes/data/alice_in_wonderland/aiw_spelling_corrupted_10.txt"));

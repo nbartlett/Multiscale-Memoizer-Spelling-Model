@@ -20,8 +20,7 @@ public class UniformIntegerDistribution implements Distribution<Integer> {
     }
 
     public UniformIntegerDistribution(int alphabetSize) {
-        this.alphabetSize = alphabetSize;
-        this.leftShift = 0;
+        this(alphabetSize, 0);
     }
 
     public double logProbability(Integer type) {
